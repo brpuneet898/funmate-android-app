@@ -1,45 +1,31 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
+ * Funmate - Dating + Event Booking App
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import SplashScreen from './src/screens/splash/SplashScreen';
+import AppNavigator from './src/navigation/AppNavigator';
+import { initializeAppCheckService } from './src/config/firebaseAppCheck';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // Initialize App Check to avoid reCAPTCHA browser redirects
+    initializeAppCheckService();
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <AppNavigator />
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;

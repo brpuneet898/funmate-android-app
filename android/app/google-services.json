@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "544227080732",
+    "project_id": "funmate-f3b01",
+    "storage_bucket": "funmate-f3b01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544227080732:android:df09f7378e768a3413bdd9",
+        "android_client_info": {
+          "package_name": "com.funmateapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy7kLaVrKV5C760zDxR-x1QjaZWpUdiYk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
