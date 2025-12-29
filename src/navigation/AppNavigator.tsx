@@ -11,6 +11,8 @@ import GoogleProfileSetupScreen from '../screens/auth/GoogleProfileSetupScreen';
 import PhotoUploadScreen from '../screens/auth/PhotoUploadScreen';
 import IdentityVerificationIntroScreen from '../screens/auth/IdentityVerificationIntroScreen';
 import LivenessVerificationScreen from '../screens/auth/LivenessVerificationScreen';
+import InterestsSelectionScreen from '../screens/auth/InterestsSelectionScreen';
+import DatingPreferencesScreen from '../screens/auth/DatingPreferencesScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -31,6 +33,8 @@ export type RootStackParamList = {
   PhotoUpload: undefined;
   IdentityVerification: undefined;
   LivenessVerification: undefined;
+  InterestsSelection: undefined;
+  DatingPreferences: undefined;
   // TODO: Add more screens later
 };
 
@@ -54,6 +58,8 @@ const AppNavigator = () => {
         <Stack.Screen name="PhotoUpload" component={PhotoUploadScreen} />
         <Stack.Screen name="IdentityVerification" component={IdentityVerificationIntroScreen} />
         <Stack.Screen name="LivenessVerification" component={LivenessVerificationScreen} />
+        <Stack.Screen name="InterestsSelection" component={InterestsSelectionScreen} />
+        <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -66,9 +66,19 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
   // Animation for circle overlay
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Random challenge sequence (prevents replay attacks)
+  // Fisher-Yates shuffle for reliable randomization (prevents replay attacks)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Random challenge sequence with all 4 unique challenges
   const challengeSequence = useRef<Challenge[]>(
-    (['CENTER', 'TURN_LEFT', 'TURN_RIGHT', 'SMILE'] as Challenge[]).sort(() => Math.random() - 0.5)
+    shuffleArray(['CENTER', 'TURN_LEFT', 'TURN_RIGHT', 'SMILE'] as Challenge[])
   );
 
   useEffect(() => {
@@ -328,10 +338,8 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
 
         // Navigate to next screen after delay
         setTimeout(() => {
-          // TODO: Navigate to final profile setup or main app
-          // For now, go back to previous screen (photo upload)
-          // Replace with actual next screen when implemented
-          navigation.goBack();
+          // Navigate to Interests Selection screen
+          navigation.navigate('InterestsSelection' as never);
         }, 2000);
 
       } else {

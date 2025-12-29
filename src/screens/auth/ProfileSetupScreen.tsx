@@ -6,12 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  ScrollView,
   ActivityIndicator,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import DatePicker from 'react-native-date-picker';
@@ -297,17 +295,19 @@ const ProfileSetupScreen = ({ navigation, route }: ProfileSetupScreenProps) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <ScrollView 
+      <KeyboardAwareScrollView 
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={100}
+        extraHeight={150}
+        enableAutomaticScroll={true}
+        keyboardOpeningTime={0}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -474,9 +474,7 @@ const ProfileSetupScreen = ({ navigation, route }: ProfileSetupScreenProps) => {
             <Text style={styles.continueButtonText}>Continue</Text>
           )}
         </TouchableOpacity>
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Gender Picker Modal */}
       <Modal
@@ -508,7 +506,7 @@ const ProfileSetupScreen = ({ navigation, route }: ProfileSetupScreenProps) => {
           </View>
         </TouchableOpacity>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -519,6 +517,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   header: {
     paddingHorizontal: 32,
@@ -678,9 +680,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  bottomSpacer: {
-    height: 40,
   },
 });
 
