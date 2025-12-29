@@ -9,6 +9,8 @@ import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 import GoogleProfileSetupScreen from '../screens/auth/GoogleProfileSetupScreen';
 import PhotoUploadScreen from '../screens/auth/PhotoUploadScreen';
+import IdentityVerificationIntroScreen from '../screens/auth/IdentityVerificationIntroScreen';
+import LivenessVerificationScreen from '../screens/auth/LivenessVerificationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -27,6 +29,8 @@ export type RootStackParamList = {
   };
   GoogleProfileSetup: { googleUser: any };
   PhotoUpload: undefined;
+  IdentityVerification: undefined;
+  LivenessVerification: undefined;
   // TODO: Add more screens later
 };
 
@@ -48,6 +52,8 @@ const AppNavigator = () => {
         <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
         <Stack.Screen name="GoogleProfileSetup" component={GoogleProfileSetupScreen} />
         <Stack.Screen name="PhotoUpload" component={PhotoUploadScreen} />
+        <Stack.Screen name="IdentityVerification" component={IdentityVerificationIntroScreen} />
+        <Stack.Screen name="LivenessVerification" component={LivenessVerificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

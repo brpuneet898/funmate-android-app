@@ -252,8 +252,7 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
       });
 
       setTimeout(() => {
-        // TODO: Navigate to next screen (interests, bio, etc.)
-        console.log('Navigate to next profile setup screen');
+        navigation.navigate('IdentityVerification');
       }, 1000);
 
     } catch (error: any) {

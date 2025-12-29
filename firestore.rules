@@ -32,11 +32,13 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // 3. VERIFICATIONS - Read-only for users, write-only for backend
+    // 3. VERIFICATIONS - Users can create their own verifications
     match /verifications/{verificationId} {
       allow read: if isAuthenticated() && 
                      resource.data.accountId == request.auth.uid;
-      allow write: if false; // Only Cloud Functions can write
+      allow create: if isAuthenticated() && 
+                       request.resource.data.accountId == request.auth.uid;
+      allow update, delete: if false; // Only Cloud Functions can update/delete
     }
     
     // 4. BANK ACCOUNTS - Private, user can only access their own
