@@ -73,6 +73,14 @@ const SwipeHubScreen = () => {
           return;
         }
 
+        console.log('🔍 Current user data:', {
+          uid: userId,
+          accountType: currentUserData.accountType,
+          hasInterests: currentUserData.interests?.length || 0,
+          hasRelationshipIntent: !!currentUserData.relationshipIntent,
+          hasInterestedIn: currentUserData.interestedIn?.length || 0,
+        });
+
         // Get already swiped user IDs
         const swipedDocs = await firestore()
           .collection('swipes')
@@ -96,6 +104,11 @@ const SwipeHubScreen = () => {
           .where('accountType', '==', 'user') // Only show explorers, not creators
           .limit(50)
           .get();
+
+        console.log('📊 Query results:', {
+          totalUsers: usersSnapshot.size,
+          swipedCount: swipedUserIds.length,
+        });
 
         const potentialMatches: Match[] = [];
 
@@ -243,7 +256,11 @@ const SwipeHubScreen = () => {
             lastActiveAt: userData.lastActiveAt,
           });
         });
-
+        console.log('✅ Potential matches found:', {
+          total: potentialMatches.length,
+          hasPreferences: hasFilledPreferences,
+          hasGenderPref: hasGenderPreference,
+        });
         // Sort by match score (highest first) if user has preferences
         // Otherwise shuffle randomly for users without preferences
         if (hasFilledPreferences) {
