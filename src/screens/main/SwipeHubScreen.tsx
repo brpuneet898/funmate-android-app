@@ -101,7 +101,6 @@ const SwipeHubScreen = () => {
         // Fetch all users (we'll filter client-side for now)
         const usersSnapshot = await firestore()
           .collection('users')
-          .where('accountType', '==', 'user') // Only show explorers, not creators
           .limit(50)
           .get();
 
