@@ -49,22 +49,32 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // 5. SWIPES - User can only create their own swipes
+    // 5. SWIPES - User can create their own swipes, target can update actedOnByTarget
     match /swipes/{swipeId} {
       allow read: if isAuthenticated() && 
                      (resource.data.fromUserId == request.auth.uid || 
                       resource.data.toUserId == request.auth.uid);
       allow create: if isAuthenticated() && 
                        request.resource.data.fromUserId == request.auth.uid;
-      allow update, delete: if false;
+      // Allow target user to update actedOnByTarget field only
+      allow update: if isAuthenticated() && 
+                       resource.data.toUserId == request.auth.uid &&
+                       request.resource.data.actedOnByTarget == true &&
+                       request.resource.data.fromUserId == resource.data.fromUserId &&
+                       request.resource.data.toUserId == resource.data.toUserId &&
+                       request.resource.data.action == resource.data.action;
+      allow delete: if false;
     }
     
-    // 6. MATCHES - Both users can read
+    // 6. MATCHES - Both users can read, participants can create
     match /matches/{matchId} {
       allow read: if isAuthenticated() && 
                      (resource.data.userA == request.auth.uid || 
                       resource.data.userB == request.auth.uid);
-      allow write: if false; // Only Cloud Functions create matches
+      allow create: if isAuthenticated() && 
+                       (request.resource.data.userA == request.auth.uid || 
+                        request.resource.data.userB == request.auth.uid);
+      allow update, delete: if false;
     }
     
     // 7. CHATS - Only participants can access

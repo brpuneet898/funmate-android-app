@@ -22,6 +22,7 @@ import DatingPreferencesScreen from '../screens/auth/DatingPreferencesScreen';
 import CreatorEmailVerificationScreen from '../screens/auth/CreatorEmailVerificationScreen';
 import CreatorTypeSelectionScreen from '../screens/auth/CreatorTypeSelectionScreen';
 import IndividualVerificationScreen from '../screens/auth/IndividualVerificationScreen';
+import LikesSwiperScreen from '../screens/main/LikesSwiperScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -59,6 +60,7 @@ export type RootStackParamList = {
   LivenessVerification: undefined;
   InterestsSelection: undefined;
   DatingPreferences: undefined;
+  LikesSwiper: { clickedUserId: string };
   // TODO: Add more screens later
 };
 
@@ -94,9 +96,9 @@ const AppNavigator = () => {
         }}
         initialRouteName={user ? 'MainTabs' : 'Login'}
       >
+        {/* Auth screens - always available for signup flow */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="EmailLogin" component={EmailLoginScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="AccountType" component={AccountTypeScreen} />
         <Stack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
         <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
@@ -113,6 +115,9 @@ const AppNavigator = () => {
         <Stack.Screen name="LivenessVerification" component={LivenessVerificationScreen} />
         <Stack.Screen name="InterestsSelection" component={InterestsSelectionScreen} />
         <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} />
+        <Stack.Screen name="LikesSwiper" component={LikesSwiperScreen} />
+        {/* Main app - after auth */}
+        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -16,6 +16,9 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
+  PermissionsAndroid,
+  Platform,
+  Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -23,6 +26,7 @@ import Toast from 'react-native-toast-message';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Slider from '@react-native-community/slider';
+import Geolocation from '@react-native-community/geolocation';
 
 interface DatingPreferencesScreenProps {
   navigation: any;
@@ -52,6 +56,55 @@ const DatingPreferencesScreen: React.FC<DatingPreferencesScreenProps> = ({ navig
   const [interestedIn, setInterestedIn] = useState<Gender[]>([]);
   const [matchRadiusKm, setMatchRadiusKm] = useState(25);
   const [saving, setSaving] = useState(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+
+  /**
+   * Request location permission
+   */
+  const requestLocationPermission = async (): Promise<boolean> => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'Funmate needs access to your location to find matches nearby',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        const permitted = granted === PermissionsAndroid.RESULTS.GRANTED;
+        setLocationPermissionGranted(permitted);
+        return permitted;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions differently
+  };
+
+  /**
+   * Get current location coordinates
+   */
+  const getCurrentLocation = (): Promise<{ latitude: number; longitude: number } | null> => {
+    return new Promise((resolve) => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error('Location error:', error);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      );
+    });
+  };
 
   const handleToggleGender = (gender: Gender) => {
     if (interestedIn.includes(gender)) {
@@ -164,6 +217,25 @@ const DatingPreferencesScreen: React.FC<DatingPreferencesScreenProps> = ({ navig
         throw new Error('User not authenticated');
       }
 
+      // Request location permission and get coordinates
+      const hasPermission = await requestLocationPermission();
+      let location = null;
+
+      if (hasPermission) {
+        const coords = await getCurrentLocation();
+        if (coords) {
+          location = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          };
+          console.log('📍 Location captured:', location);
+        } else {
+          console.warn('⚠️ Could not get location coordinates');
+        }
+      } else {
+        console.warn('⚠️ Location permission denied');
+      }
+
       // Save dating preferences to users collection (following database schema)
       await firestore()
         .collection('users')
@@ -173,6 +245,7 @@ const DatingPreferencesScreen: React.FC<DatingPreferencesScreenProps> = ({ navig
           relationshipIntent,
           interestedIn,
           matchRadiusKm,
+          location, // Can be null if permission denied
         });
 
       console.log('✅ Dating preferences saved');

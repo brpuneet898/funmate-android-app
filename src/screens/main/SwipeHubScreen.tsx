@@ -8,7 +8,7 @@
  * - Swipe actions: like (right), pass (left)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -18,13 +18,22 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
+  PermissionsAndroid,
+  Platform,
+  Linking,
+  AppState,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CardSwiper from '../../components/CardSwiper';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import Toast from 'react-native-toast-message';
-import { calculateMatchScore, calculateDistance, passesFilters } from '../../utils/matchScoring';
+import Geolocation from '@react-native-community/geolocation';
+import { calculateMatchScore, calculateDistance, passesFilters } from '../../utils/RecomendationEngine';
+import { calculateProfileCompleteness } from '../../utils/profileCompleteness';
 
 const { width, height } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
@@ -32,13 +41,21 @@ const CARD_HEIGHT = height * 0.65;
 
 interface Match {
   id: string;
-  fullName: string;
+  name: string;
   age: number;
   gender: string;
   bio: string;
   interests: string[];
   relationshipIntent: string | null;
-  photos: string[];
+  interestedIn?: string[];
+  isVerified?: boolean;
+  photos: Array<{
+    url: string;
+    isPrimary: boolean;
+    moderationStatus: string;
+    order: number;
+    uploadedAt: string;
+  }>;
   location?: {
     latitude: number;
     longitude: number;
@@ -51,27 +68,253 @@ interface Match {
 const SwipeHubScreen = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [showLocationBanner, setShowLocationBanner] = useState(false);
   
   const userId = auth().currentUser?.uid;
+  const isFocused = useIsFocused();
+  const hasRequestedPermission = useRef(false);
+  const appState = useRef(AppState.currentState);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Get current match for detail view (always first since we filter out swiped cards)
+  const currentMatch = matches[0];
 
   /**
-   * Fetch potential matches
+   * Update location in Firestore (only if permission granted)
    */
-  useEffect(() => {
+  const updateLocationIfAllowed = async () => {
     if (!userId) return;
     
-    const fetchMatches = async () => {
-      try {
-        // Get current user data
-        const currentUserDoc = await firestore().collection('users').doc(userId).get();
-        const currentUserData = currentUserDoc.data();
+    try {
+      if (Platform.OS === 'android') {
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
         
-        if (!currentUserData) {
-          setLoading(false);
+        if (!hasPermission) {
+          console.log('📍 No permission, skipping location update');
           return;
         }
+      }
+      
+      Geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await firestore().collection('users').doc(userId).update({
+              location: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              },
+              lastActiveAt: firestore.FieldValue.serverTimestamp(),
+            });
+            console.log('📍 Location updated successfully');
+          } catch (error) {
+            console.error('Error saving location:', error);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 300000,
+        }
+      );
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  };
+
+  /**
+   * Request location permission - ONLY called once on initial mount
+   */
+  const requestLocationPermission = async () => {
+    if (!userId) return;
+    if (hasRequestedPermission.current) return; // Already requested this session
+    
+    try {
+      if (Platform.OS === 'android') {
+        // First check if already granted
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        
+        if (hasPermission) {
+          console.log('📍 Permission already granted');
+          await updateLocationIfAllowed();
+          return;
+        }
+        
+        // Mark as requested so we don't ask again this session
+        hasRequestedPermission.current = true;
+        
+        // Request permission - this shows native dialog ONLY if user hasn't denied before
+        console.log('📍 Requesting location permission');
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('📍 Permission granted by user');
+          setShowLocationBanner(false);
+          await updateLocationIfAllowed();
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Location Enabled',
+            text2: 'Finding better matches near you!',
+            visibilityTime: 2000,
+          });
+        } else {
+          // User denied - show banner
+          console.log('📍 Permission denied by user');
+          setShowLocationBanner(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+    }
+  };
+
+  /**
+   * Handle Enable button press on banner - opens app permissions page
+   */
+  const handleEnableLocation = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        // Open the app's permissions page directly
+        await Linking.sendIntent('android.settings.action.MANAGE_APP_PERMISSIONS', [
+          { key: 'android.intent.extra.PACKAGE_NAME', value: 'com.funmateapp' }
+        ]);
+      } else {
+        await Linking.openSettings();
+      }
+    } catch (error) {
+      // Fallback to openSettings
+      try {
+        await Linking.openSettings();
+      } catch (fallbackError) {
+        console.error('Error opening settings:', fallbackError);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Could not open settings',
+          visibilityTime: 2000,
+        });
+      }
+    }
+  };
+
+  /**
+   * Dismiss the location banner
+   */
+  const dismissLocationBanner = () => {
+    setShowLocationBanner(false);
+  };
+
+  /**
+   * Initial load - request permission once and fetch matches
+   */
+  useEffect(() => {
+    const init = async () => {
+      if (!userId) return;
+      await requestLocationPermission();
+      await fetchMatches();
+    };
+    init();
+  }, [userId]);
+
+  /**
+   * On tab focus or loading complete - check permission status and show/hide banner accordingly
+   */
+  useEffect(() => {
+    const checkPermissionAndUpdate = async () => {
+      if (!isFocused || loading) return;
+      
+      if (Platform.OS === 'android') {
+        const hasPermission = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        
+        if (hasPermission) {
+          // Permission granted - hide banner and update location
+          if (showLocationBanner) {
+            setShowLocationBanner(false);
+            Toast.show({
+              type: 'success',
+              text1: 'Location Enabled',
+              text2: 'Finding better matches near you!',
+              visibilityTime: 2000,
+            });
+          }
+          await updateLocationIfAllowed();
+        } else {
+          // Permission not granted - show banner again
+          setShowLocationBanner(true);
+        }
+      }
+      
+      fetchMatches();
+    };
+    
+    checkPermissionAndUpdate();
+  }, [isFocused, loading]);
+
+  /**
+   * Listen for app returning to foreground (from Settings)
+   */
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active' &&
+        isFocused
+      ) {
+        // App came to foreground - check if permission was granted
+        if (Platform.OS === 'android') {
+          const hasPermission = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          );
+          
+          if (hasPermission && showLocationBanner) {
+            setShowLocationBanner(false);
+            await updateLocationIfAllowed();
+            fetchMatches();
+            
+            Toast.show({
+              type: 'success',
+              text1: 'Location Enabled',
+              text2: 'Finding better matches near you!',
+              visibilityTime: 2000,
+            });
+          }
+        }
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isFocused, showLocationBanner]);
+
+  /**
+   * Fetch potential matches (extracted for reuse)
+   */
+  const fetchMatches = async () => {
+    if (!userId) return;
+    try {
+      // Get current user data
+      const currentUserDoc = await firestore().collection('users').doc(userId).get();
+      const currentUserData = currentUserDoc.data();
+      
+      if (!currentUserData) {
+        setLoading(false);
+        return;
+      }
 
         console.log('🔍 Current user data:', {
           uid: userId,
@@ -135,7 +378,7 @@ const SwipeHubScreen = () => {
           if (!hasFilledPreferences) {
             potentialMatches.push({
               id: matchUserId,
-              fullName: userData.fullName || 'Unknown',
+              name: userData.name || 'Unknown',
               age: userData.age || 25,
               gender: userData.gender,
               bio: userData.bio || '',
@@ -157,14 +400,12 @@ const SwipeHubScreen = () => {
             const passes = passesFilters(
               {
                 interestedIn: [], // Empty array = show all genders
-                matchRadiusKm: currentUserData.matchRadiusKm || 25,
                 relationshipIntent: currentUserData.relationshipIntent,
               },
               {
                 gender: userData.gender,
                 relationshipIntent: userData.relationshipIntent,
-              },
-              distance
+              }
             );
 
             if (!passes) return;
@@ -190,7 +431,7 @@ const SwipeHubScreen = () => {
 
             potentialMatches.push({
               id: matchUserId,
-              fullName: userData.fullName || 'Unknown',
+              name: userData.name || 'Unknown',
               age: userData.age || 25,
               gender: userData.gender,
               bio: userData.bio || '',
@@ -209,14 +450,12 @@ const SwipeHubScreen = () => {
           const passes = passesFilters(
             {
               interestedIn: currentUserData.interestedIn || [],
-              matchRadiusKm: currentUserData.matchRadiusKm || 25,
               relationshipIntent: currentUserData.relationshipIntent,
             },
             {
               gender: userData.gender,
               relationshipIntent: userData.relationshipIntent,
-            },
-            distance
+            }
           );
 
           if (!passes) return;
@@ -242,12 +481,14 @@ const SwipeHubScreen = () => {
 
           potentialMatches.push({
             id: matchUserId,
-            fullName: userData.fullName || 'Unknown',
+            name: userData.name || 'Unknown',
             age: userData.age || 25,
             gender: userData.gender,
             bio: userData.bio || '',
             interests: userData.interests || [],
             relationshipIntent: userData.relationshipIntent,
+            interestedIn: userData.interestedIn || [],
+            isVerified: userData.isVerified || false,
             photos: userData.photos || [],
             location: userData.location,
             distance: Math.round(distance),
@@ -274,21 +515,29 @@ const SwipeHubScreen = () => {
 
         setMatches(potentialMatches);
         setLoading(false);
+        setRefreshing(false);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      setLoading(false);
+      setRefreshing(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to Load Matches',
+        text2: 'Please try again',
+        visibilityTime: 3000,
+      });
+    }
+  };
 
-      } catch (error) {
-        console.error('Error fetching matches:', error);
-        setLoading(false);
-        Toast.show({
-          type: 'error',
-          text1: 'Failed to Load Matches',
-          text2: 'Please try again',
-          visibilityTime: 3000,
-        });
-      }
-    };
-
-    fetchMatches();
-  }, [userId]);
+  /**
+   * Pull to refresh handler
+   */
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setCurrentPhotoIndex(0);
+    await fetchMatches();
+    setRefreshing(false);
+  };
 
   /**
    * Handle swipe right (like)
@@ -303,23 +552,21 @@ const SwipeHubScreen = () => {
         fromUserId: userId,
         toUserId: match.id,
         action: 'like',
+        actedOnByTarget: false,
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-      // Create notification for the liked user
-      await firestore().collection('notifications').add({
-        userId: match.id,
-        type: 'like_received',
-        fromUserId: userId,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        read: false,
-      });
+      // Note: Notifications are created by Cloud Functions, not client-side
+      // This avoids permission-denied errors
 
-      console.log(`✅ Liked: ${match.fullName}`);
+      console.log(`✅ Liked: ${match.name}`);
       
-      // Reset photo index for next card
-      setCurrentCardIndex(cardIndex + 1);
+      // Remove the swiped card from matches array for immediate UI update
+      setMatches(prev => prev.filter((_, idx) => idx !== cardIndex));
+      
+      // Reset photo index and scroll position for next card
       setCurrentPhotoIndex(0);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     } catch (error) {
       console.error('Error saving like:', error);
     }
@@ -338,14 +585,18 @@ const SwipeHubScreen = () => {
         fromUserId: userId,
         toUserId: match.id,
         action: 'pass',
+        actedOnByTarget: false,
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-      console.log(`❌ Passed: ${match.fullName}`);
+      console.log(`❌ Passed: ${match.name}`);
       
-      // Reset photo index for next card
-      setCurrentCardIndex(cardIndex + 1);
+      // Remove the swiped card from matches array for immediate UI update
+      setMatches(prev => prev.filter((_, idx) => idx !== cardIndex));
+      
+      // Reset photo index and scroll position for next card
       setCurrentPhotoIndex(0);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
     } catch (error) {
       console.error('Error saving pass:', error);
     }
@@ -355,7 +606,7 @@ const SwipeHubScreen = () => {
    * Navigate photos in current card
    */
   const handleCardTap = (side: 'left' | 'right') => {
-    const currentMatch = matches[currentCardIndex];
+    const currentMatch = matches[0]; // Always first card since we filter out swiped
     if (!currentMatch || !currentMatch.photos.length) return;
 
     if (side === 'right') {
@@ -373,8 +624,11 @@ const SwipeHubScreen = () => {
    * Render individual card
    */
   const renderCard = (match: Match, index: number) => {
-    const currentPhoto = match.photos[currentPhotoIndex] || 'https://via.placeholder.com/400';
+    const currentPhoto = match.photos[currentPhotoIndex]?.url || 'https://via.placeholder.com/400';
     const matchPercentage = Math.round(match.matchScore);
+    
+    // Show "unknown" if no location data
+    const distanceText = match.location ? `${match.distance} km away` : 'Location unknown';
 
     return (
       <View style={styles.card}>
@@ -414,16 +668,22 @@ const SwipeHubScreen = () => {
           <Text style={styles.matchLabel}>Match</Text>
         </View>
 
+        {/* Trust badge (profile completeness) */}
+        <View style={styles.trustBadge}>
+          <Text style={styles.trustPercentage}>{calculateProfileCompleteness(match)}%</Text>
+          <Text style={styles.trustLabel}>Trusted</Text>
+        </View>
+
         {/* Card info */}
         <View style={styles.cardInfo}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardName}>
-                {match.fullName}, {match.age}
+                {match.name}, {match.age}
               </Text>
               <View style={styles.cardMeta}>
                 <Ionicons name="location-outline" size={14} color="#999999" />
-                <Text style={styles.cardDistance}>{match.distance} km away</Text>
+                <Text style={styles.cardDistance}>{distanceText}</Text>
               </View>
             </View>
           </View>
@@ -476,14 +736,53 @@ const SwipeHubScreen = () => {
           <Text style={styles.title}>Swipe Hub</Text>
         </View>
 
-        {/* No matches content */}
-        <View style={styles.emptyContainer}>
-          <Ionicons name="people-outline" size={80} color="#E0E0E0" />
-          <Text style={styles.emptyTitle}>No Matches Yet</Text>
-          <Text style={styles.emptyText}>
-            Check back later for new profiles!{'\n'}Try adjusting your preferences or radius.
-          </Text>
-        </View>
+        {/* Location Banner */}
+        {showLocationBanner && (
+          <View style={styles.locationBanner}>
+            <View style={styles.locationBannerContent}>
+              <Ionicons name="location" size={20} color="#856404" />
+              <Text style={styles.locationBannerText}>
+                Enable location for better matches nearby
+              </Text>
+            </View>
+            <View style={styles.locationBannerActions}>
+              <TouchableOpacity
+                style={styles.enableButton}
+                onPress={handleEnableLocation}
+              >
+                <Text style={styles.enableButtonText}>Enable</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.closeBannerButton}
+                onPress={() => setShowLocationBanner(false)}
+              >
+                <Ionicons name="close" size={20} color="#856404" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* No matches content with pull-to-refresh */}
+        <ScrollView
+          contentContainerStyle={styles.emptyScrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#FF4458']}
+              tintColor="#FF4458"
+            />
+          }
+        >
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={80} color="#E0E0E0" />
+            <Text style={styles.emptyTitle}>No Matches Yet</Text>
+            <Text style={styles.emptyText}>
+              Check back later for new profiles!{'\n'}Try adjusting your preferences or radius.
+            </Text>
+            <Text style={styles.pullToRefreshHint}>Pull down to refresh</Text>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -498,16 +797,152 @@ const SwipeHubScreen = () => {
         <Text style={styles.title}>Swipe Hub</Text>
       </View>
 
-      {/* Swiper */}
-      <View style={styles.swiperContainer}>
-        <CardSwiper
-          data={matches}
-          renderCard={renderCard}
-          onSwipeRight={handleSwipeRight}
-          onSwipeLeft={handleSwipeLeft}
-          stackSize={3}
-        />
-      </View>
+      {/* Location Banner */}
+      {showLocationBanner && (
+        <View style={styles.locationBanner}>
+          <View style={styles.locationBannerContent}>
+            <Ionicons name="location" size={20} color="#856404" />
+            <Text style={styles.locationBannerText}>
+              Enable location for better matches nearby
+            </Text>
+          </View>
+          <View style={styles.locationBannerActions}>
+            <TouchableOpacity
+              style={styles.enableButton}
+              onPress={handleEnableLocation}
+            >
+              <Text style={styles.enableButtonText}>Enable</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeBannerButton}
+              onPress={() => setShowLocationBanner(false)}
+            >
+              <Ionicons name="close" size={20} color="#856404" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Main Scrollable Content - Bumble Style */}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#FF4458']}
+            tintColor="#FF4458"
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        {/* Card Swiper Section */}
+        <View style={styles.swiperContainer}>
+          <CardSwiper
+            data={matches}
+            renderCard={renderCard}
+            onSwipeRight={handleSwipeRight}
+            onSwipeLeft={handleSwipeLeft}
+            stackSize={3}
+          />
+        </View>
+
+        {/* Scroll indicator */}
+        {currentMatch && (
+          <View style={styles.scrollIndicator}>
+            <Ionicons name="chevron-down" size={24} color="#999999" />
+            <Text style={styles.scrollHintText}>Scroll for more details</Text>
+          </View>
+        )}
+
+        {/* Profile Details Section */}
+        {currentMatch && (
+          <View style={styles.profileDetailsContainer}>
+            {/* Basic Info Header */}
+            <View style={styles.detailHeader}>
+              <Text style={styles.detailName}>{currentMatch.name}, {currentMatch.age}</Text>
+              <View style={styles.detailLocation}>
+                <Ionicons name="location-outline" size={16} color="#666666" />
+                <Text style={styles.detailLocationText}>
+                  {currentMatch.location ? `${currentMatch.distance} km away` : 'Location unknown'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Bio Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Bio</Text>
+              <Text style={styles.detailSectionContent}>
+                {currentMatch.bio || 'No bio added yet'}
+              </Text>
+            </View>
+
+            {/* Interests Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Interests</Text>
+              {currentMatch.interests && currentMatch.interests.length > 0 ? (
+                <View style={styles.interestsContainer}>
+                  {currentMatch.interests.map((interest, index) => (
+                    <View key={index} style={styles.interestChip}>
+                      <Text style={styles.interestChipText}>{interest}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.detailEmptyText}>No interests added yet</Text>
+              )}
+            </View>
+
+            {/* Looking For Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Looking For</Text>
+              <Text style={styles.detailSectionContent}>
+                {currentMatch.relationshipIntent || 'Not specified'}
+              </Text>
+            </View>
+
+            {/* Interested In Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Interested In</Text>
+              {currentMatch.interestedIn && currentMatch.interestedIn.length > 0 ? (
+                <View style={styles.interestsContainer}>
+                  {currentMatch.interestedIn.map((gender, index) => (
+                    <View key={index} style={styles.preferenceChip}>
+                      <Text style={styles.preferenceChipText}>{gender}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.detailEmptyText}>Not specified</Text>
+              )}
+            </View>
+
+            {/* Gender Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Gender</Text>
+              <Text style={styles.detailSectionContent}>
+                {currentMatch.gender || 'Not specified'}
+              </Text>
+            </View>
+
+            {/* Match Score Section */}
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>Match Score</Text>
+              <View style={styles.matchScoreContainer}>
+                <View style={styles.matchScoreBar}>
+                  <View style={[styles.matchScoreFill, { width: `${Math.min(currentMatch.matchScore, 100)}%` }]} />
+                </View>
+                <Text style={styles.matchScoreText}>{Math.round(currentMatch.matchScore)}%</Text>
+              </View>
+            </View>
+
+            {/* Bottom padding for scroll */}
+            <View style={styles.bottomPadding} />
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 };
@@ -544,9 +979,64 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1A1A1A',
   },
-  swiperContainer: {
+  locationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF3CD',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFEEBA',
+  },
+  locationBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    paddingTop: 20,
+    gap: 8,
+  },
+  locationBannerText: {
+    fontSize: 14,
+    color: '#856404',
+    flex: 1,
+  },
+  locationBannerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  enableButton: {
+    backgroundColor: '#FF4458',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  enableButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  closeBannerButton: {
+    padding: 4,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  emptyScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  swiperContainer: {
+    height: CARD_HEIGHT + 40,
+    paddingTop: 10,
+  },
+  pullToRefreshHint: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#999999',
+    fontStyle: 'italic',
   },
   card: {
     width: CARD_WIDTH,
@@ -613,6 +1103,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   matchLabel: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    marginTop: -2,
+  },
+  trustBadge: {
+    position: 'absolute',
+    top: 75, // Below match badge
+    right: 20,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  trustPercentage: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  trustLabel: {
     fontSize: 10,
     color: '#FFFFFF',
     marginTop: -2,
@@ -712,6 +1222,188 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  // Location Request Styles
+  locationRequestContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  locationIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FFF0F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  locationRequestTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  locationRequestDescription: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  enableLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF4458',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    gap: 8,
+    minWidth: 200,
+  },
+  enableLocationButtonDisabled: {
+    backgroundColor: '#FFB0B8',
+  },
+  enableLocationButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  locationPrivacyText: {
+    marginTop: 20,
+    fontSize: 14,
+    color: '#4CAF50',
+    textAlign: 'center',
+  },
+  // Profile Details Styles (Bumble-style scroll)
+  scrollIndicator: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  scrollHintText: {
+    fontSize: 14,
+    color: '#999999',
+    marginTop: 4,
+  },
+  profileDetailsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    marginTop: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  detailHeader: {
+    marginBottom: 24,
+  },
+  detailName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  detailLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailLocationText: {
+    fontSize: 15,
+    color: '#666666',
+  },
+  detailSection: {
+    marginBottom: 24,
+  },
+  detailSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 10,
+  },
+  detailSectionContent: {
+    fontSize: 16,
+    color: '#444444',
+    lineHeight: 24,
+  },
+  detailEmptyText: {
+    fontSize: 15,
+    color: '#999999',
+    fontStyle: 'italic',
+  },
+  interestsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  interestChip: {
+    backgroundColor: '#FFF0F1',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FFD6DA',
+  },
+  interestChipText: {
+    fontSize: 14,
+    color: '#FF4458',
+    fontWeight: '500',
+  },
+  preferenceChip: {
+    backgroundColor: '#E8F4FD',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#B3D9F2',
+  },
+  preferenceChipText: {
+    fontSize: 14,
+    color: '#1976D2',
+    fontWeight: '500',
+  },
+  verificationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  verificationText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  matchScoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  matchScoreBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#EEEEEE',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  matchScoreFill: {
+    height: '100%',
+    backgroundColor: '#FF4458',
+    borderRadius: 4,
+  },
+  matchScoreText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FF4458',
+    width: 45,
+    textAlign: 'right',
+  },
+  bottomPadding: {
+    height: 40,
   },
 });
 
