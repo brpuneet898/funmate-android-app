@@ -354,18 +354,16 @@ const LikesSwiperScreen = () => {
     
     showMatchAnimationRef.current = false; // Reset ref
     setShowMatchAnimation(false);
-    setMatchData(null);
     
-    // Navigate to MyHub where chats are displayed
-    // TODO: Update to navigate directly to ChatScreen when implemented
-    navigation.goBack(); // Go back to MyHub where the new chat will appear
-    
-    Toast.show({
-      type: 'success',
-      text1: 'Match Created!',
-      text2: 'You can now chat with ' + matchData.matchedUser.name,
-      visibilityTime: 3000,
+    // Navigate to chat with the matched user
+    navigation.navigate('Chat', {
+      chatId: matchData.chatId || null,
+      recipientId: matchData.matchedUser.id,
+      recipientName: matchData.matchedUser.name,
+      recipientPhoto: matchData.matchedUser.photos?.[0]?.url,
     });
+    
+    setMatchData(null);
   }, [matchData, navigation]);
 
   /**

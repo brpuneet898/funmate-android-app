@@ -25,7 +25,7 @@ import {
   Linking,
   AppState,
 } from 'react-native';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CardSwiper from '../../components/CardSwiper';
 import MatchAnimation from '../../components/MatchAnimation';
@@ -74,6 +74,7 @@ interface MatchAnimationData {
 }
 
 const SwipeHubScreen = () => {
+  const navigation = useNavigation<any>();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,6 +85,7 @@ const SwipeHubScreen = () => {
   const [showMatchAnimation, setShowMatchAnimation] = useState(false);
   const [matchAnimationData, setMatchAnimationData] = useState<MatchAnimationData | null>(null);
   const [currentUserPhoto, setCurrentUserPhoto] = useState<string>('');
+  const showMatchAnimationRef = useRef(false); // Ref for synchronous access to prevent empty state flicker
   
   const userId = auth().currentUser?.uid;
   const isFocused = useIsFocused();
@@ -594,6 +596,11 @@ const SwipeHubScreen = () => {
       const isMutualMatch = !existingLikeQuery.empty;
       const existingLikeDoc = isMutualMatch ? existingLikeQuery.docs[0] : null;
 
+      // Set ref BEFORE any async work to prevent empty state flicker
+      if (isMutualMatch) {
+        showMatchAnimationRef.current = true;
+      }
+
       // Save our swipe to Firestore
       await firestore().collection('swipes').add({
         fromUserId: userId,
@@ -694,21 +701,25 @@ const SwipeHubScreen = () => {
   const handleSendMessage = useCallback(() => {
     if (!matchAnimationData) return;
     
+    showMatchAnimationRef.current = false; // Reset ref
     setShowMatchAnimation(false);
-    setMatchAnimationData(null);
     
-    Toast.show({
-      type: 'success',
-      text1: 'Match Created!',
-      text2: 'You can chat with ' + matchAnimationData.matchedUser.name + ' in My Hub',
-      visibilityTime: 3000,
+    // Navigate to chat with the matched user
+    navigation.navigate('Chat', {
+      chatId: matchAnimationData.chatId || null,
+      recipientId: matchAnimationData.matchedUser.id,
+      recipientName: matchAnimationData.matchedUser.name,
+      recipientPhoto: matchAnimationData.matchedUser.photos?.[0]?.url,
     });
-  }, [matchAnimationData]);
+    
+    setMatchAnimationData(null);
+  }, [matchAnimationData, navigation]);
 
   /**
    * Handle "Keep Swiping" from match animation
    */
   const handleKeepSwiping = useCallback(() => {
+    showMatchAnimationRef.current = false; // Reset ref
     setShowMatchAnimation(false);
     setMatchAnimationData(null);
   }, []);
@@ -836,7 +847,8 @@ const SwipeHubScreen = () => {
     );
   }
 
-  if (matches.length === 0) {
+  // Don't show empty state if match animation is about to show
+  if (matches.length === 0 && !showMatchAnimationRef.current) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />

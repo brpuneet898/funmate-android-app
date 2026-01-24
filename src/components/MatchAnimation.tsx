@@ -20,6 +20,8 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  Modal,
+  StatusBar,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -236,14 +238,22 @@ const MatchAnimation: React.FC<MatchAnimationProps> = ({
   if (!visible) return null;
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        { opacity: overlayOpacity },
-      ]}
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="none"
+      statusBarTranslucent={true}
+      onRequestClose={onKeepSwiping}
     >
-      {/* Semi-transparent background */}
-      <View style={styles.backdrop} />
+      <StatusBar backgroundColor="rgba(0, 0, 0, 0.85)" barStyle="light-content" />
+      <Animated.View
+        style={[
+          styles.container,
+          { opacity: overlayOpacity },
+        ]}
+      >
+        {/* Semi-transparent background */}
+        <View style={styles.backdrop} />
 
       {/* Ripple circles */}
       <View style={styles.rippleContainer}>
@@ -364,7 +374,8 @@ const MatchAnimation: React.FC<MatchAnimationProps> = ({
           </View>
         </Animated.View>
       )}
-    </Animated.View>
+      </Animated.View>
+    </Modal>
   );
 };
 
@@ -375,7 +386,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1000,
+    zIndex: 9999,
+    elevation: 9999, // Android needs elevation for proper z-ordering
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -23,6 +23,7 @@ import CreatorEmailVerificationScreen from '../screens/auth/CreatorEmailVerifica
 import CreatorTypeSelectionScreen from '../screens/auth/CreatorTypeSelectionScreen';
 import IndividualVerificationScreen from '../screens/auth/IndividualVerificationScreen';
 import LikesSwiperScreen from '../screens/main/LikesSwiperScreen';
+import ChatScreen from '../screens/main/ChatScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -61,6 +62,12 @@ export type RootStackParamList = {
   InterestsSelection: undefined;
   DatingPreferences: undefined;
   LikesSwiper: { clickedUserId: string };
+  Chat: {
+    chatId: string | null;
+    recipientId: string;
+    recipientName?: string;
+    recipientPhoto?: string;
+  };
   // TODO: Add more screens later
 };
 
@@ -116,6 +123,7 @@ const AppNavigator = () => {
         <Stack.Screen name="InterestsSelection" component={InterestsSelectionScreen} />
         <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} />
         <Stack.Screen name="LikesSwiper" component={LikesSwiperScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
         {/* Main app - after auth */}
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       </Stack.Navigator>
