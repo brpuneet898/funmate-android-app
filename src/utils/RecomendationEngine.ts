@@ -2,12 +2,18 @@
  * MATCH SCORING UTILITY
  * 
  * Calculates match compatibility score based on:
- * - Distance (0-30 points)
- * - Relationship intent (0-30 points)
+ * - Distance (0-30 points) - 0 if outside radius or missing location
+ * - Relationship intent (0-30 points) - incompatible = HARD FILTER
  * - Shared interests (0-30 points)
  * - Activity recency (0-10 points)
  * 
- * Total: 0-100 points
+ * Total: 0-100 points (capped, never exceeds 100)
+ * 
+ * HARD FILTERS (exclude from feed):
+ * - Gender mismatch (based on interestedIn)
+ * - Incompatible relationship intent (hookups ↔ long_term, hookups ↔ friendship)
+ * 
+ * Distance > radius gets 0 points BUT still shows in feed
  */
 
 interface UserProfile {
@@ -48,32 +54,55 @@ export const calculateDistance = (
 
 /**
  * Calculate distance score (0-30 points)
- * Closer = higher score
+ * - If outside radius: 0 points (but still show card)
+ * - If no location: 0 points (no redistribution)
+ * - Closer = higher score
  */
 const calculateDistanceScore = (
-  distance: number,
+  distance: number | null,
   maxRadius: number
 ): number => {
-  if (distance > maxRadius) return 0;
+  if (distance === null || distance > maxRadius) return 0;
   return Math.round(30 * (1 - distance / maxRadius));
 };
 
 /**
  * Calculate relationship intent compatibility (0-30 points)
+ * 
+ * EXACT MATCH (30 points):
+ * - Same intent
+ * 
+ * COMPATIBLE OVERLAP (20 points):
+ * - long_term ↔ unsure
+ * - casual ↔ unsure
+ * - hookups ↔ unsure
+ * - hookups ↔ casual
+ * - friendship ↔ unsure
+ * 
+ * WEAK OVERLAP (10 points):
+ * - long_term ↔ casual
+ * - long_term ↔ friendship
+ * - casual ↔ friendship
+ * 
+ * INCOMPATIBLE (0 points + HARD FILTER in passesFilters):
+ * - long_term ↔ hookups
+ * - friendship ↔ hookups
  */
 const calculateIntentScore = (
   userIntent: string | null,
   matchIntent: string | null
 ): number => {
-  if (!userIntent || !matchIntent) return 10; // Neutral score if unknown
+  if (!userIntent || !matchIntent) return 0;
   
-  // Exact match
+  // Exact match (30 points)
   if (userIntent === matchIntent) return 30;
   
-  // Compatible overlaps
+  // Compatible overlaps (20 points)
   const compatiblePairs = [
-    ['casual', 'unsure'],
     ['long_term', 'unsure'],
+    ['casual', 'unsure'],
+    ['hookups', 'unsure'],
+    ['hookups', 'casual'],
     ['friendship', 'unsure'],
   ];
   
@@ -85,12 +114,28 @@ const calculateIntentScore = (
   
   if (isCompatible) return 20;
   
-  // Weak overlap
-  return 10;
+  // Weak overlaps (10 points)
+  const weakPairs = [
+    ['long_term', 'casual'],
+    ['long_term', 'friendship'],
+    ['casual', 'friendship'],
+  ];
+  
+  const isWeak = weakPairs.some(
+    ([a, b]) =>
+      (userIntent === a && matchIntent === b) ||
+      (userIntent === b && matchIntent === a)
+  );
+  
+  if (isWeak) return 10;
+  
+  // Incompatible (should be filtered out, but return 0 if somehow reached)
+  return 0;
 };
 
 /**
  * Calculate shared interests score (0-30 points)
+ * Common interests = min(userInterests, matchInterests)
  */
 const calculateInterestsScore = (
   userInterests: string[],
@@ -102,8 +147,9 @@ const calculateInterestsScore = (
     matchInterests.includes(interest)
   );
   
-  const maxInterests = Math.max(userInterests.length, matchInterests.length);
-  return Math.round((common.length / maxInterests) * 30);
+  // Normalize by the smaller set (max possible common)
+  const minInterests = Math.min(userInterests.length, matchInterests.length);
+  return Math.round((common.length / minInterests) * 30);
 };
 
 /**
@@ -124,48 +170,70 @@ const calculateActivityScore = (lastActiveAt: any): number => {
 
 /**
  * Calculate total match score (0-100)
+ * 
+ * ALWAYS USES FULL SCORING:
+ * - Distance: 30 points (0 if outside radius or no location)
+ * - Intent: 30 points
+ * - Interests: 30 points
+ * - Activity: 10 points
+ * 
+ * NO REDISTRIBUTION when location is missing
  */
 export const calculateMatchScore = (
   currentUser: UserProfile,
   potentialMatch: UserProfile,
-  distance: number
+  distance: number | null
 ): number => {
+  // Distance score (0 if missing location or outside radius)
   const distanceScore = calculateDistanceScore(distance, currentUser.matchRadiusKm);
+  
+  // Intent score (0-30)
   const intentScore = calculateIntentScore(
     currentUser.relationshipIntent,
     potentialMatch.relationshipIntent
   );
+  
+  // Interests score (0-30)
   const interestsScore = calculateInterestsScore(
     currentUser.interests,
     potentialMatch.interests
   );
+  
+  // Activity score (0-10)
   const activityScore = calculateActivityScore(potentialMatch.lastActiveAt);
   
-  return distanceScore + intentScore + interestsScore + activityScore;
+  // Total (capped at 100)
+  const total = distanceScore + intentScore + interestsScore + activityScore;
+  return Math.min(total, 100);
 };
 
 /**
  * Check if two users pass hard filters
+ * 
+ * HARD FILTERS (exclude from feed):
+ * 1. Gender mismatch (user's interestedIn doesn't include match's gender)
+ * 2. Incompatible relationship intent:
+ *    - long_term ↔ hookups
+ *    - friendship ↔ hookups
+ * 
+ * Distance > radius is NOT a hard filter (shows with 0 distance points)
  */
 export const passesFilters = (
   currentUser: {
     interestedIn: string[];
-    matchRadiusKm: number;
     relationshipIntent: string | null;
   },
   potentialMatch: {
     gender: string;
     relationshipIntent: string | null;
-  },
-  distance: number
+  }
 ): boolean => {
-  // Distance filter
-  if (distance > currentUser.matchRadiusKm) return false;
-  
   // Gender preference filter
-  if (!currentUser.interestedIn.includes(potentialMatch.gender)) return false;
+  if (!currentUser.interestedIn.includes(potentialMatch.gender)) {
+    return false;
+  }
   
-  // Relationship intent basic compatibility
+  // Relationship intent incompatibility filter
   if (currentUser.relationshipIntent && potentialMatch.relationshipIntent) {
     const incompatiblePairs = [
       ['hookups', 'long_term'],

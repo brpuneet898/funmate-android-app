@@ -26,7 +26,7 @@ import { Platform } from 'react-native';
  * - Windows: ipconfig (look for IPv4 Address)
  * - Mac/Linux: ifconfig (look for inet)
  */
-const LOCAL_WIFI_IP = '10.42.243.80';
+const LOCAL_WIFI_IP = '10.44.48.129';
 
 /**
  * Production backend URL (update when deployed)

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "544227080732-qtj50op962n2rrehha90ndacmtfbkj4e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.funmateapp",
+            "certificate_hash": "bee528f296e04bc6d4b4e837af70a614cde9c4da"
+          }
+        },
+        {
           "client_id": "544227080732-ag40c3g4g64tgv910cu1it16bmmn4g3m.apps.googleusercontent.com",
           "client_type": 3
         }
