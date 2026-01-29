@@ -27,11 +27,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLikers } from '../../hooks/useLikers';
 import { Liker, Chat, User } from '../../types/database';
 import { searchUsers, isAlgoliaConfigured, AlgoliaUserRecord } from '../../config/algolia';
 import { isUserBlocked } from '../../services/blockService';
 import { deleteChat } from '../../services/chatService';
+import WhoLikedYouFilterModal from '../../components/WhoLikedYouFilterModal';
+import { WhoLikedYouFilters, DEFAULT_FILTERS } from '../../types/filters';
 
 const { width } = Dimensions.get('window');
 const LIKER_CARD_SIZE = 120;
@@ -61,6 +64,10 @@ interface AlgoliaUser {
 const MyHubScreen = ({ navigation }: any) => {
   const userId = auth().currentUser?.uid;
   
+  // Filter state
+  const [filters, setFilters] = useState<WhoLikedYouFilters>(DEFAULT_FILTERS);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  
   const {
     likers,
     loading,
@@ -69,7 +76,8 @@ const MyHubScreen = ({ navigation }: any) => {
     refetch,
     hasMore,
     refillQueue,
-  } = useLikers();
+    availableOccupations,
+  } = useLikers(filters);
 
   // State for conversations
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -88,6 +96,51 @@ const MyHubScreen = ({ navigation }: any) => {
   // Refresh trigger for when returning from blocking
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isInitialMount = useRef(true);
+
+  /**
+   * Load saved filters from AsyncStorage
+   */
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('whoLikedYouFilters');
+        if (saved) {
+          setFilters(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  /**
+   * Count active filters
+   */
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.ageRange) count++;
+    if (filters.heightRange) count++;
+    if (filters.relationshipIntent && filters.relationshipIntent.length > 0) count++;
+    if (filters.maxDistance !== null) count++;
+    if (filters.occupations && filters.occupations.length > 0) count++;
+    if (filters.trustScoreRange) count++;
+    if (filters.matchScoreRange) count++;
+    return count;
+  }, [filters]);
+
+  /**
+   * Handle filter changes
+   */
+  const handleApplyFilters = async (newFilters: WhoLikedYouFilters) => {
+    setFilters(newFilters);
+    // Save to AsyncStorage
+    try {
+      await AsyncStorage.setItem('whoLikedYouFilters', JSON.stringify(newFilters));
+    } catch (error) {
+      console.error('Error saving filters:', error);
+    }
+  };
 
   /**
    * Refresh conversations when screen comes into focus (after blocking)
@@ -695,13 +748,26 @@ const MyHubScreen = ({ navigation }: any) => {
               <Ionicons name="heart" size={22} color="#FF4458" />
               <Text style={styles.sectionTitle}>Who Liked You</Text>
             </View>
-            {totalCount > 0 && (
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>
-                  {totalCount > 99 ? '99+' : totalCount}
-                </Text>
-              </View>
-            )}
+            <View style={styles.headerActions}>
+              {totalCount > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>
+                    {totalCount > 99 ? '99+' : totalCount}
+                  </Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={() => setShowFilterModal(true)}
+              >
+                <Ionicons name="options-outline" size={20} color="#FF4458" />
+                {activeFilterCount > 0 && (
+                  <View style={styles.filterBadge}>
+                    <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Horizontal Likers List */}
@@ -799,6 +865,15 @@ const MyHubScreen = ({ navigation }: any) => {
           </View>
         </>
       )}
+
+      {/* Filter Modal */}
+      <WhoLikedYouFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        availableOccupations={availableOccupations}
+      />
     </View>
   );
 };
@@ -860,6 +935,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FFF0F1',
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FF4458',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   countBadge: {
     backgroundColor: '#FF4458',

@@ -25,12 +25,15 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import CardSwiper from '../../components/CardSwiper';
-import MatchAnimation from '../../components/MatchAnimation'; // Radiant Pulse animation
+import MatchAnimation from '../../components/MatchAnimation';
+import WhoLikedYouFilterModal from '../../components/WhoLikedYouFilterModal';
 import { Liker } from '../../types/database';
 import { calculateProfileCompleteness } from '../../utils/profileCompleteness';
 import { useLikers } from '../../hooks/useLikers';
+import { WhoLikedYouFilters, DEFAULT_FILTERS } from '../../types/filters';
 
 const { width, height } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.9;
@@ -58,6 +61,10 @@ const LikesSwiperScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const cardSwiperKey = useRef(0);
 
+  // Filter state
+  const [filters, setFilters] = useState<WhoLikedYouFilters>(DEFAULT_FILTERS);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
   // Use the likers hook for real-time updates
   const {
     likers,
@@ -65,7 +72,8 @@ const LikesSwiperScreen = () => {
     hasMore,
     refillQueue,
     markAsActedOn,
-  } = useLikers();
+    availableOccupations,
+  } = useLikers(filters);
 
   // State
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -79,6 +87,51 @@ const LikesSwiperScreen = () => {
   const showMatchAnimationRef = useRef(false); // Ref for synchronous access in callbacks
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [currentUserPhoto, setCurrentUserPhoto] = useState<string>('');
+
+  /**
+   * Load saved filters from AsyncStorage
+   */
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('whoLikedYouFilters');
+        if (saved) {
+          setFilters(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  /**
+   * Count active filters
+   */
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.ageRange) count++;
+    if (filters.heightRange) count++;
+    if (filters.relationshipIntent && filters.relationshipIntent.length > 0) count++;
+    if (filters.maxDistance !== null) count++;
+    if (filters.occupations && filters.occupations.length > 0) count++;
+    if (filters.trustScoreRange) count++;
+    if (filters.matchScoreRange) count++;
+    return count;
+  }, [filters]);
+
+  /**
+   * Handle filter changes
+   */
+  const handleApplyFilters = async (newFilters: WhoLikedYouFilters) => {
+    setFilters(newFilters);
+    // Save to AsyncStorage
+    try {
+      await AsyncStorage.setItem('whoLikedYouFilters', JSON.stringify(newFilters));
+    } catch (error) {
+      console.error('Error saving filters:', error);
+    }
+  };
 
   /**
    * Fetch current user's photo for the animation
@@ -574,9 +627,22 @@ const LikesSwiperScreen = () => {
           <Ionicons name="heart" size={24} color="#FF4458" />
           <Text style={styles.title}>Who Liked You</Text>
         </View>
-        <Text style={styles.counter}>
-          {orderedLikers.length} remaining
-        </Text>
+        <View style={styles.headerRight}>
+          <Text style={styles.counter}>
+            {orderedLikers.length} remaining
+          </Text>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons name="options-outline" size={20} color="#FF4458" />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Processing indicator */}
@@ -789,6 +855,15 @@ const LikesSwiperScreen = () => {
         onSendMessage={handleSendMessage}
         onKeepSwiping={handleKeepSwiping}
       />
+
+      {/* Filter Modal */}
+      <WhoLikedYouFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        availableOccupations={availableOccupations}
+      />
     </View>
   );
 };
@@ -821,6 +896,34 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1A1A',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FFF0F1',
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FF4458',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   counter: {
     fontSize: 14,

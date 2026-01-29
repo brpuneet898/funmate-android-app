@@ -169,6 +169,7 @@ export interface Liker {
   height: UserHeight | null;
   occupation: string | null;
   socialHandles: SocialHandles | null;
+  completeness: number; // Profile completeness percentage (0-100)
 }
 
 // ==========================================

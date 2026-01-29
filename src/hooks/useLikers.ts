@@ -17,6 +17,8 @@ import auth from '@react-native-firebase/auth';
 import { Liker, Swipe, UserLocation } from '../types/database';
 import { calculateMatchScore, calculateDistance } from '../utils/RecomendationEngine';
 import { getBlockedUserIds } from '../utils/blockCache';
+import { WhoLikedYouFilters } from '../types/filters';
+import { calculateProfileCompleteness } from '../utils/profileCompleteness';
 
 const BATCH_SIZE = 20;
 
@@ -29,6 +31,7 @@ interface UseLikersResult {
   refetch: () => Promise<void>;
   refillQueue: () => Promise<void>;
   markAsActedOn: (swipeId: string) => Promise<void>;
+  availableOccupations: string[]; // Unique occupations for filter
 }
 
 interface CurrentUserProfile {
@@ -39,12 +42,13 @@ interface CurrentUserProfile {
   interestedIn: string[];
 }
 
-export const useLikers = (): UseLikersResult => {
+export const useLikers = (filters?: WhoLikedYouFilters): UseLikersResult => {
   const [likers, setLikers] = useState<Liker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [availableOccupations, setAvailableOccupations] = useState<string[]>([]);
   
   // Refs for mutable state that shouldn't cause re-renders
   const currentUserProfileRef = useRef<CurrentUserProfile | null>(null);
@@ -127,6 +131,9 @@ export const useLikers = (): UseLikersResult => {
       
       allSwipeIdsRef.current.add(swipeId);
       
+      // Calculate profile completeness
+      const completeness = calculateProfileCompleteness(likerData);
+      
       return {
         id: swipeData.fromUserId,
         swipeId: swipeId,
@@ -147,6 +154,7 @@ export const useLikers = (): UseLikersResult => {
         height: likerData.height || null,
         occupation: likerData.occupation || null,
         socialHandles: likerData.socialHandles || null,
+        completeness,
       };
     } catch (err) {
       console.error('Error processing swipe:', err);
@@ -396,12 +404,76 @@ export const useLikers = (): UseLikersResult => {
     };
   }, [userId]);
 
+  // Apply filters and extract unique occupations
+  const filteredLikers = filters ? likers.filter(liker => {
+    // Age Range Filter
+    if (filters.ageRange) {
+      if (liker.age < filters.ageRange.min || liker.age > filters.ageRange.max) {
+        return false;
+      }
+    }
+
+    // Height Range Filter
+    if (filters.heightRange && liker.height?.value) {
+      if (liker.height.value < filters.heightRange.min || liker.height.value > filters.heightRange.max) {
+        return false;
+      }
+    }
+
+    // Relationship Intent Filter
+    if (filters.relationshipIntent && filters.relationshipIntent.length > 0) {
+      if (!liker.relationshipIntent || !filters.relationshipIntent.includes(liker.relationshipIntent)) {
+        return false;
+      }
+    }
+
+    // Distance Filter
+    if (filters.maxDistance !== null && liker.distance !== null) {
+      if (liker.distance > filters.maxDistance) {
+        return false;
+      }
+    }
+
+    // Occupation Filter
+    if (filters.occupations && filters.occupations.length > 0) {
+      if (!liker.occupation || !filters.occupations.includes(liker.occupation)) {
+        return false;
+      }
+    }
+
+    // Trust Score (Completeness) Filter
+    if (filters.trustScoreRange) {
+      if (liker.completeness < filters.trustScoreRange.min || liker.completeness > filters.trustScoreRange.max) {
+        return false;
+      }
+    }
+
+    // Match Score Filter
+    if (filters.matchScoreRange) {
+      if (liker.matchScore < filters.matchScoreRange.min || liker.matchScore > filters.matchScoreRange.max) {
+        return false;
+      }
+    }
+
+    return true;
+  }) : likers;
+
+  // Extract unique occupations from all likers (unfiltered)
+  const uniqueOccupations = Array.from(
+    new Set(
+      likers
+        .map(l => l.occupation)
+        .filter((occ): occ is string => !!occ)
+    )
+  ).sort();
+
   return {
-    likers,
+    likers: filteredLikers,
     loading,
     error,
     hasMore,
     totalCount,
+    availableOccupations: uniqueOccupations,
     refetch,
     refillQueue,
     markAsActedOn,
