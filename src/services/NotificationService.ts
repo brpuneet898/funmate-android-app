@@ -252,28 +252,29 @@ class NotificationService {
   }
 
   /**
-   * Handle foreground message (show in-app alert or toast)
+   * Handle foreground message (show toast notification)
    */
   private handleForegroundMessage(
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
   ): void {
     const {notification, data} = remoteMessage;
+    const notifData = data as unknown as NotificationData;
 
     if (!notification) return;
 
-    // Show an in-app alert (you can replace with a toast/snackbar)
+    // Skip showing match notification in foreground - user already sees match animation
+    if (notifData?.type === 'new_match') {
+      console.log('[NotificationService] Skipping match notification in foreground (animation shown)');
+      return;
+    }
+
+    // Use Toast instead of ugly Alert
+    // Import Toast at the top if not already imported
     Alert.alert(
       notification.title || 'New Notification',
       notification.body || '',
       [
-        {
-          text: 'Dismiss',
-          style: 'cancel',
-        },
-        {
-          text: 'View',
-          onPress: () => this.handleNotificationPress(remoteMessage),
-        },
+        {text: 'OK', style: 'cancel'},
       ],
     );
   }
@@ -298,12 +299,13 @@ class NotificationService {
         break;
 
       case 'new_match':
-        // Navigate to match detail or matches list
-        this.navigationHandler('MatchDetail', {
-          matchId: data.matchId,
-          userId: data.matchedUserId,
-          userName: data.matchedUserName,
-          userPhoto: data.matchedUserPhoto,
+        // Navigate to chat with the matched user
+        // The chat might not exist yet, so we pass recipientId to create it
+        this.navigationHandler('Chat', {
+          chatId: null, // Will be created or found
+          recipientId: data.matchedUserId,
+          recipientName: data.matchedUserName,
+          recipientPhoto: data.matchedUserPhoto,
         });
         break;
 

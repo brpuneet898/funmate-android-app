@@ -6,7 +6,8 @@ import {
   isNotificationEnabled,
 } from "../utils/sendPush";
 
-const db = admin.firestore();
+// Lazy initialization - get Firestore when needed
+const getDb = () => admin.firestore();
 
 /**
  * Triggered when a new match is created
@@ -30,8 +31,8 @@ export const onNewMatch = onDocumentCreated(
 
     // Get both users' details
     const [userADoc, userBDoc] = await Promise.all([
-      db.collection("users").doc(userA).get(),
-      db.collection("users").doc(userB).get(),
+      getDb().collection("users").doc(userA).get(),
+      getDb().collection("users").doc(userB).get(),
     ]);
 
     const userAData = userADoc.data();
@@ -46,7 +47,7 @@ export const onNewMatch = onDocumentCreated(
         title: "🎉 It's a Match!",
         body: `You and ${userBData.name} liked each other!`,
         data: {
-          screen: "MatchDetail",
+          screen: "Chat",
           matchId: snapshot.id,
           matchedUserId: userB,
           matchedUserName: userBData.name,
@@ -65,7 +66,7 @@ export const onNewMatch = onDocumentCreated(
         title: "🎉 It's a Match!",
         body: `You and ${userAData.name} liked each other!`,
         data: {
-          screen: "MatchDetail",
+          screen: "Chat",
           matchId: snapshot.id,
           matchedUserId: userA,
           matchedUserName: userAData.name,

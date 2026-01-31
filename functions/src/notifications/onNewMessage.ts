@@ -6,7 +6,30 @@ import {
   isNotificationEnabled,
 } from "../utils/sendPush";
 
-const db = admin.firestore();
+// Lazy initialization - get Firestore when needed
+const getDb = () => admin.firestore();
+
+/**
+ * Check if recipient has blocked the sender
+ */
+async function isSenderBlocked(
+  recipientId: string,
+  senderId: string
+): Promise<boolean> {
+  try {
+    const blockSnapshot = await getDb()
+      .collection("blockedUsers")
+      .where("userId", "==", recipientId)
+      .where("blockedUserId", "==", senderId)
+      .limit(1)
+      .get();
+
+    return !blockSnapshot.empty;
+  } catch (error) {
+    logger.error("Error checking block status:", error);
+    return false; // Default to not blocked if error
+  }
+}
 
 /**
  * Triggered when a new message is created
@@ -34,7 +57,7 @@ export const onNewMessage = onDocumentCreated(
     }
 
     // Get the chat to find the recipient
-    const chatDoc = await db.collection("chats").doc(chatId).get();
+    const chatDoc = await getDb().collection("chats").doc(chatId).get();
 
     if (!chatDoc.exists) {
       logger.error(`Chat ${chatId} not found`);
@@ -52,6 +75,13 @@ export const onNewMessage = onDocumentCreated(
       return;
     }
 
+    // Check if recipient has blocked the sender
+    const blocked = await isSenderBlocked(recipientId, senderId);
+    if (blocked) {
+      logger.info(`Sender ${senderId} is blocked by ${recipientId}, skipping notification`);
+      return;
+    }
+
     // Check if recipient has messages notifications enabled
     const isEnabled = await isNotificationEnabled(recipientId, "messages");
     if (!isEnabled) {
@@ -60,7 +90,7 @@ export const onNewMessage = onDocumentCreated(
     }
 
     // Get sender's name
-    const senderDoc = await db.collection("users").doc(senderId).get();
+    const senderDoc = await getDb().collection("users").doc(senderId).get();
     const senderData = senderDoc.data();
     const senderName = senderData?.name || "Someone";
 
