@@ -61,6 +61,48 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
 
+  /**
+   * Calculate password strength
+   */
+  const getPasswordStrength = (pass: string) => {
+    const requirements = {
+      minLength: pass.length >= 6,
+      length: pass.length >= 8,
+      uppercase: /[A-Z]/.test(pass),
+      lowercase: /[a-z]/.test(pass),
+      number: /[0-9]/.test(pass),
+      special: /[@#$%^&*()!]/.test(pass),
+    };
+
+    if (!pass) return { score: 0, label: '', color: '#E0E0E0', requirements };
+
+    const score = Object.values(requirements).filter(Boolean).length;
+
+    let label = '';
+    let color = '';
+
+    if (score <= 2) {
+      label = 'Weak';
+      color = '#FF4458';
+    } else if (score === 3) {
+      label = 'Fair';
+      color = '#FFA500';
+    } else if (score <= 5) {
+      label = 'Good';
+      color = '#8BC34A';
+    } else {
+      label = 'Strong';
+      color = '#4CAF50';
+    }
+
+    return { score, label, color, requirements };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+
+  // DEBUG: Log password changes
+  console.log('PASSWORD:', password, 'LENGTH:', password.length, 'SCORE:', passwordStrength.score);
+
   // Check username availability with debounce
   useEffect(() => {
     const checkUsername = async () => {
@@ -143,7 +185,12 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
       }
 
       if (password.length < 6) {
-        Toast.show({ type: 'error', text1: 'Weak Password', text2: 'Password must be at least 6 characters' });
+        Toast.show({ type: 'error', text1: 'Password Too Short', text2: 'Password must be at least 6 characters' });
+        return;
+      }
+
+      if (passwordStrength.score < 4) {
+        Toast.show({ type: 'error', text1: 'Password Too Weak', text2: 'Please create a Good or Strong password' });
         return;
       }
 
@@ -380,6 +427,26 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
             </TouchableOpacity>
           </View>
 
+          {/* Password Strength Indicator */}
+          {password.length > 0 && (
+            <View style={styles.passwordStrengthContainer}>
+              <View style={styles.strengthBarBackground}>
+                <View 
+                  style={[
+                    styles.strengthBarFill, 
+                    { 
+                      width: `${(passwordStrength.score / 6) * 100}%`,
+                      backgroundColor: passwordStrength.color 
+                    }
+                  ]} 
+                />
+              </View>
+              <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>
+                {passwordStrength.label}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -526,6 +593,28 @@ const styles = StyleSheet.create({
     top: 0,
     height: 56,
     justifyContent: 'center',
+  },
+  passwordStrengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  strengthBarBackground: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  strengthBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  strengthLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    minWidth: 50,
   },
   googleButton: {
     backgroundColor: '#FFFFFF',

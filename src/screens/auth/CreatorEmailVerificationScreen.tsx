@@ -12,7 +12,7 @@
  * 5. Navigates to CreatorTypeSelection
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -36,6 +36,20 @@ const CreatorEmailVerificationScreen: React.FC<CreatorEmailVerificationScreenPro
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
+    }
+  }, [resendTimer]);
 
   /**
    * Check if email is verified in Firebase Auth
@@ -172,6 +186,8 @@ const CreatorEmailVerificationScreen: React.FC<CreatorEmailVerificationScreenPro
    * Resend verification email
    */
   const handleResendCode = async () => {
+    if (!canResend) return;
+    
     try {
       const user = auth().currentUser;
       if (!user) {
@@ -179,6 +195,11 @@ const CreatorEmailVerificationScreen: React.FC<CreatorEmailVerificationScreenPro
       }
       
       await user.sendEmailVerification();
+      
+      // Reset timer
+      setResendTimer(30);
+      setCanResend(false);
+      
       Toast.show({
         type: 'success',
         text1: 'Email Sent',
@@ -258,10 +279,14 @@ const CreatorEmailVerificationScreen: React.FC<CreatorEmailVerificationScreenPro
         </TouchableOpacity>
 
         <View style={styles.resendContainer}>
-          <Text style={styles.resendText}>Didn't receive code? </Text>
-          <TouchableOpacity onPress={handleResendCode} activeOpacity={0.7}>
-            <Text style={styles.resendLink}>Resend</Text>
-          </TouchableOpacity>
+          <Text style={styles.resendText}>Didn't receive email? </Text>
+          {canResend ? (
+            <TouchableOpacity onPress={handleResendCode} activeOpacity={0.7}>
+              <Text style={styles.resendLink}>Resend</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
+          )}
         </View>
       </View>
     </View>
@@ -373,6 +398,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#FF4458',
     fontWeight: '600',
+  },
+  resendTimer: {
+    fontSize: 15,
+    color: '#999999',
+    fontWeight: '500',
   },
 });
 

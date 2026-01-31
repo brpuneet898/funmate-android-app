@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,21 @@ const OTPVerificationScreen = ({ navigation, route }: OTPVerificationScreenProps
   };
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
+    }
+  }, [resendTimer]);
 
   const handleOtpChange = (value: string, index: number) => {
     // Only allow digits
@@ -180,6 +194,8 @@ const OTPVerificationScreen = ({ navigation, route }: OTPVerificationScreenProps
   };
 
   const handleResendCode = async () => {
+    if (!canResend) return;
+    
     try {
       console.log('Resending code to:', phoneNumber);
       
@@ -188,6 +204,10 @@ const OTPVerificationScreen = ({ navigation, route }: OTPVerificationScreenProps
         authInstance,
         phoneNumber
       );
+      
+      // Reset timer
+      setResendTimer(30);
+      setCanResend(false);
       
       Toast.show({
         type: 'success',
@@ -274,9 +294,13 @@ const OTPVerificationScreen = ({ navigation, route }: OTPVerificationScreenProps
         {/* Resend Code */}
         <View style={styles.resendContainer}>
           <Text style={styles.resendText}>Didn't receive code? </Text>
-          <TouchableOpacity onPress={handleResendCode} activeOpacity={0.7}>
-            <Text style={styles.resendLink}>Resend</Text>
-          </TouchableOpacity>
+          {canResend ? (
+            <TouchableOpacity onPress={handleResendCode} activeOpacity={0.7}>
+              <Text style={styles.resendLink}>Resend</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.resendTimer}>Resend in {resendTimer}s</Text>
+          )}
         </View>
       </View>
     </View>
@@ -369,6 +393,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#FF4458',
     fontWeight: '600',
+  },
+  resendTimer: {
+    fontSize: 15,
+    color: '#999999',
+    fontWeight: '500',
   },
 });
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useState, useEffect, forwardRef } from 'react';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import auth from '@react-native-firebase/auth';
@@ -25,6 +25,7 @@ import IndividualVerificationScreen from '../screens/auth/IndividualVerification
 import LikesSwiperScreen from '../screens/main/LikesSwiperScreen';
 import ChatScreen from '../screens/main/ChatScreen';
 import { BlockedUsersScreen } from '../screens/settings/BlockedUsersScreen';
+import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -70,12 +71,13 @@ export type RootStackParamList = {
     recipientPhoto?: string;
   };
   BlockedUsers: undefined;
+  NotificationSettings: undefined;
   // TODO: Add more screens later
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const AppNavigator = () => {
+const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>, {}>((props, ref) => {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<any>(null);
 
@@ -98,7 +100,7 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={ref}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -136,12 +138,13 @@ const AppNavigator = () => {
             headerTintColor: '#1A1A1A',
           }}
         />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
         {/* Main app - after auth */}
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+});
 
 const styles = StyleSheet.create({
   loadingContainer: {
