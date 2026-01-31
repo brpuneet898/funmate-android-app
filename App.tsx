@@ -30,10 +30,12 @@ function App() {
     });
 
     // Initialize push notifications when user is logged in
+    // Note: Permission will be requested in DatingPreferencesScreen after user profile is created
     const unsubscribe = auth().onAuthStateChanged(async (user) => {
       if (user) {
-        // User is signed in, initialize notifications
-        await notificationService.initialize((screen, params) => {
+        // User is signed in - set up notification handlers only (no permission request)
+        // The actual token/permission will be handled in DatingPreferencesScreen
+        notificationService.setupHandlersOnly((screen, params) => {
           // Navigate to screen when notification is tapped
           if (navigationRef.current) {
             navigationRef.current.navigate(screen as any, params as any);

@@ -39,18 +39,37 @@ export type NavigationHandler = (screen: string, params?: object) => void;
 class NotificationService {
   private navigationHandler: NavigationHandler | null = null;
   private isInitialized = false;
+  private handlersSetup = false;
 
   /**
-   * Initialize the notification service
-   * Should be called once at app startup (App.tsx)
+   * Setup message handlers only (no permission request)
+   * Call this early to handle notification taps, even before permission is granted
    */
-  async initialize(onNavigate: NavigationHandler): Promise<void> {
+  setupHandlersOnly(onNavigate: NavigationHandler): void {
+    if (this.handlersSetup) {
+      console.log('[NotificationService] Handlers already setup');
+      return;
+    }
+
+    this.navigationHandler = onNavigate;
+    this.setupMessageHandlers();
+    this.handlersSetup = true;
+    console.log('[NotificationService] Handlers setup (no permission yet)');
+  }
+
+  /**
+   * Initialize the notification service with permission request
+   * Should be called after user profile is created (DatingPreferencesScreen)
+   */
+  async initialize(onNavigate?: NavigationHandler): Promise<void> {
     if (this.isInitialized) {
       console.log('[NotificationService] Already initialized');
       return;
     }
 
-    this.navigationHandler = onNavigate;
+    if (onNavigate) {
+      this.navigationHandler = onNavigate;
+    }
 
     try {
       // Request permission
@@ -67,8 +86,11 @@ class NotificationService {
       // Listen for token refresh
       this.setupTokenRefreshListener();
 
-      // Setup message handlers
-      this.setupMessageHandlers();
+      // Setup message handlers (if not already done)
+      if (!this.handlersSetup) {
+        this.setupMessageHandlers();
+        this.handlersSetup = true;
+      }
 
       this.isInitialized = true;
       console.log('[NotificationService] Initialized successfully');
@@ -122,13 +144,29 @@ class NotificationService {
       // Save token to user's document in Firestore
       const userId = auth().currentUser?.uid;
       if (userId && token) {
-        await firestore()
-          .collection('users')
-          .doc(userId)
-          .update({
-            fcmTokens: firestore.FieldValue.arrayUnion(token),
-          });
-        console.log('[NotificationService] Token saved to Firestore');
+        // Check if user document exists first
+        const userDoc = await firestore().collection('users').doc(userId).get();
+        
+        // Note: exists is a getter property in RN Firebase, but types say it's a method
+        if ((userDoc.exists as unknown as boolean)) {
+          // User document exists - update with arrayUnion
+          await firestore()
+            .collection('users')
+            .doc(userId)
+            .update({
+              fcmTokens: firestore.FieldValue.arrayUnion(token),
+            });
+          console.log('[NotificationService] Token saved to Firestore');
+        } else {
+          // User document doesn't exist yet - create with set + merge
+          await firestore()
+            .collection('users')
+            .doc(userId)
+            .set({
+              fcmTokens: [token],
+            }, { merge: true });
+          console.log('[NotificationService] Token saved (new document created)');
+        }
       }
 
       return token;
