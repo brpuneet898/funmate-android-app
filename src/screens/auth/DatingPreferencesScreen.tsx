@@ -33,6 +33,7 @@ import auth from '@react-native-firebase/auth';
 import Slider from '@react-native-community/slider';
 import Geolocation from '@react-native-community/geolocation';
 import { SocialHandles } from '../../types/database';
+import notificationService from '../../services/NotificationService';
 
 interface DatingPreferencesScreenProps {
   navigation: any;
@@ -332,6 +333,12 @@ const DatingPreferencesScreen: React.FC<DatingPreferencesScreenProps> = ({ navig
         });
 
       console.log('✅ Dating preferences saved');
+
+      // Initialize push notifications (user document now exists)
+      // This will request permission and save FCM token
+      notificationService.initialize().catch(err => 
+        console.warn('Notification initialization failed:', err)
+      );
 
       // Fetch location in background (non-blocking)
       requestLocationPermission().then(async (hasPermission) => {

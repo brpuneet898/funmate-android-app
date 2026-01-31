@@ -756,6 +756,16 @@ const ProfileScreen = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Settings</Text>
           <TouchableOpacity 
             style={styles.settingsItem}
+            onPress={() => (navigation as any).navigate('NotificationSettings')}
+          >
+            <View style={styles.settingsItemLeft}>
+              <Ionicons name="notifications-outline" size={22} color="#666" />
+              <Text style={styles.settingsItemText}>Notification Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingsItem}
             onPress={() => (navigation as any).navigate('BlockedUsers')}
           >
             <View style={styles.settingsItemLeft}>

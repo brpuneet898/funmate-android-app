@@ -40,6 +40,13 @@ import firestore from '@react-native-firebase/firestore';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { API_ENDPOINTS } from '../../config/api';
 
+// API response type
+interface LivenessApiResponse {
+  isMatch: boolean;
+  similarity: number;
+  detectionScore?: number;
+}
+
 const { width, height } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.8; // 80% of screen width
 
@@ -231,7 +238,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
       console.log('📡 Sending to liveness API...');
       const response = await fetch(API_ENDPOINTS.VERIFY_LIVENESS, {
         method: 'POST',
-        body: formData,
+        body: formData as any,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -241,7 +248,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
         throw new Error('Liveness verification API failed');
       }
       
-      const result = await response.json();
+      const result = await response.json() as LivenessApiResponse;
       console.log('✅ Verification result:', result);
 
       // Transform API response to expected format
