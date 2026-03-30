@@ -26,8 +26,10 @@ import {
   AppStateStatus,
   Modal,
   FlatList,
+  ImageBackground,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Svg, { Circle } from 'react-native-svg';
 import firestore from '@react-native-firebase/firestore';
@@ -224,6 +226,7 @@ const INTEREST_CATEGORIES = [
 
 const ProfileScreen = ({ navigation }: any) => {
   const { showConfirm, showWarning } = useAlert();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userData, setUserData] = useState<any>(null);
@@ -702,20 +705,54 @@ const ProfileScreen = ({ navigation }: any) => {
     }
   };
 
+  // if (loading) {
+  //   return (
+  //     <View style={styles.loadingContainer}>
+  //       <StatusBar barStyle="light-content" backgroundColor="#0D0B1E" />
+  //       <ActivityIndicator size="large" color="#8B2BE2" />
+  //     </View>
+  //   );
+  // }
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-        <ActivityIndicator size="large" color="#378BBB" />
-      </View>
+      <ImageBackground
+        source={require('../../assets/images/bg_splash.webp')}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+          <View style={[styles.loadingContainer, { paddingTop: insets.top, paddingBottom: Math.max(24, insets.bottom + 12) }]}>
+            <ActivityIndicator size="large" color="#8B2BE2" />
+          </View>
+        </View>
+      </ImageBackground>
     );
   }
 
+  // if (!userData) {
+  //   return (
+  //     <View style={styles.loadingContainer}>
+  //       <Text style={styles.errorText}>No profile data found</Text>
+  //     </View>
+  //   );
+  // }
+
   if (!userData) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>No profile data found</Text>
-      </View>
+      <ImageBackground
+        source={require('../../assets/images/bg_splash.webp')}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+          <View style={[styles.loadingContainer, { paddingTop: insets.top, paddingBottom: Math.max(24, insets.bottom + 12) }]}>
+            <Text style={styles.errorText}>No profile data found</Text>
+          </View>
+        </View>
+      </ImageBackground>
     );
   }
 
@@ -726,21 +763,16 @@ const ProfileScreen = ({ navigation }: any) => {
   const missingFields = getMissingFields(userData);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={120}
-        extraHeight={180}
-        keyboardOpeningTime={0}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Sticky Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <Text style={styles.headerTitle}>Profile</Text>
           <View style={styles.headerActions}>
             <View style={styles.settingsIconContainer}>
@@ -748,7 +780,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 style={styles.gearIcon}
                 onPress={() => setShowSettingsDropdown(!showSettingsDropdown)}
               >
-                <Ionicons name="settings-outline" size={24} color="#378BBB" />
+                <Ionicons name="settings-outline" size={24} color="#8B2BE2" />
               </TouchableOpacity>
               
               {showSettingsDropdown && (
@@ -760,7 +792,7 @@ const ProfileScreen = ({ navigation }: any) => {
                       (navigation as any).navigate('NotificationSettings');
                     }}
                   >
-                    <Ionicons name="notifications-outline" size={20} color="#378BBB" />
+                    <Ionicons name="notifications-outline" size={20} color="#8B2BE2" />
                     <Text style={styles.dropdownItemText}>Notification Settings</Text>
                   </TouchableOpacity>
                   <View style={styles.dropdownDivider} />
@@ -771,7 +803,7 @@ const ProfileScreen = ({ navigation }: any) => {
                       (navigation as any).navigate('BlockedUsers');
                     }}
                   >
-                    <Ionicons name="ban-outline" size={20} color="#378BBB" />
+                    <Ionicons name="ban-outline" size={20} color="#A855F7" />
                     <Text style={styles.dropdownItemText}>Blocked Users</Text>
                   </TouchableOpacity>
                 </View>
@@ -783,6 +815,21 @@ const ProfileScreen = ({ navigation }: any) => {
           </View>
         </View>
 
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{
+            paddingTop: 8,
+            paddingBottom: Math.max(100, insets.bottom + 32),
+          }}
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={120}
+          extraHeight={180}
+          keyboardOpeningTime={0}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+
         {/* Profile Photo with Completion Ring */}
         <View style={styles.photoSection}>
           <View style={styles.photoContainer}>
@@ -791,7 +838,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 cx="70"
                 cy="70"
                 r="65"
-                stroke="#E0E0E0"
+                stroke="rgba(255,255,255,0.12)"
                 strokeWidth="6"
                 fill="none"
               />
@@ -799,7 +846,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 cx="70"
                 cy="70"
                 r="65"
-                stroke="#378BBB"
+                stroke="#8B2BE2"
                 strokeWidth="6"
                 fill="none"
                 strokeDasharray={`${2 * Math.PI * 65}`}
@@ -822,7 +869,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   value={username}
                   onChangeText={setUsername}
                   placeholder="Enter username"
-                  placeholderTextColor="#7F93AA"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
                   autoFocus
                 />
               ) : (
@@ -836,7 +883,8 @@ const ProfileScreen = ({ navigation }: any) => {
               {editMode === 'username' ? (
                 <Text style={styles.usernameSaveText}>Save</Text>
               ) : (
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                // <Ionicons name="pencil" size={22} color="#8B2BE2" />
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               )}
             </TouchableOpacity>
           </View>
@@ -849,7 +897,7 @@ const ProfileScreen = ({ navigation }: any) => {
           {/* Bio */}
           <View style={styles.fieldRow}>
             <View style={styles.fieldLeft}>
-              <Ionicons name="document-text" size={20} color="#378BBB" style={styles.fieldIcon} />
+              <Ionicons name="document-text" size={20} color="#8B2BE2" style={styles.fieldIcon} />
               <Text style={styles.fieldLabel}>Bio</Text>
               {!bio && <Ionicons name="alert-circle" size={16} color="#F4B400" style={styles.fieldWarningIcon} />}
             </View>
@@ -859,7 +907,8 @@ const ProfileScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => setEditMode('bio')}>
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               </TouchableOpacity>
             )}
           </View>
@@ -869,7 +918,7 @@ const ProfileScreen = ({ navigation }: any) => {
               value={bio}
               onChangeText={setBio}
               placeholder="Tell us about yourself (min 20 characters)"
-              placeholderTextColor="#7F93AA"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               multiline
               maxLength={500}
               autoFocus
@@ -888,7 +937,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.columnLeft}>
               <View style={styles.fieldRow}>
                 <View style={styles.fieldLeft}>
-                  <Ionicons name="person" size={20} color="#378BBB" style={styles.fieldIcon} />
+                  <Ionicons name="person" size={20} color="#8B2BE2" style={styles.fieldIcon} />
                   <Text style={styles.fieldLabel}>Full Name</Text>
                 </View>
                 {editMode === 'name' ? (
@@ -897,7 +946,8 @@ const ProfileScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => setEditMode('name')}>
-                    <Ionicons name="pencil" size={22} color="#378BBB" />
+                    {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                    <Ionicons name="pencil" size={22} color="#A855F7" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -907,7 +957,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   value={name}
                   onChangeText={setName}
                   placeholder="Enter your full name"
-                  placeholderTextColor="#7F93AA"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
                   autoFocus
                 />
               ) : (
@@ -923,7 +973,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.columnRight}>
               <View style={styles.fieldRow}>
                 <View style={styles.fieldLeft}>
-                  <Ionicons name="calendar" size={20} color="#378BBB" style={styles.fieldIcon} />
+                  <Ionicons name="calendar" size={20} color="#8B2BE2" style={styles.fieldIcon} />
                   <Text style={styles.fieldLabel}>Age</Text>
                 </View>
               </View>
@@ -941,7 +991,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.columnLeft}>
               <View style={styles.fieldRow}>
                 <View style={styles.fieldLeft}>
-                  <Ionicons name={userData.gender === 'male' ? 'male' : 'female'} size={20} color="#378BBB" style={styles.fieldIcon} />
+                  <Ionicons name={userData.gender === 'male' ? 'male' : 'female'} size={20} color="#8B2BE2" style={styles.fieldIcon} />
                   <Text style={styles.fieldLabel}>Gender</Text>
                 </View>
               </View>
@@ -954,7 +1004,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.columnRight}>
               <View style={styles.fieldRow}>
                 <View style={styles.fieldLeft}>
-                  <Ionicons name="body" size={20} color="#378BBB" style={styles.fieldIcon} />
+                  <Ionicons name="body" size={20} color="#8B2BE2" style={styles.fieldIcon} />
                   <Text style={styles.fieldLabel}>Height</Text>
                   {!height && <Ionicons name="alert-circle" size={16} color="#F4B400" style={styles.fieldWarningIcon} />}
                 </View>
@@ -964,7 +1014,8 @@ const ProfileScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => setEditMode('height')}>
-                    <Ionicons name="pencil" size={22} color="#378BBB" />
+                    {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                    <Ionicons name="pencil" size={22} color="#A855F7" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -972,7 +1023,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 <TextInput
                   style={styles.fieldInput}
                   placeholder="Enter height in cm"
-                  placeholderTextColor="#7F93AA"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
                   value={height ? height.toString() : ''}
                   onChangeText={(text) => {
                     const numValue = parseInt(text);
@@ -999,7 +1050,7 @@ const ProfileScreen = ({ navigation }: any) => {
           {/* Occupation */}
           <View style={styles.fieldRow}>
             <View style={styles.fieldLeft}>
-              <Ionicons name="briefcase" size={20} color="#378BBB" style={styles.fieldIcon} />
+              <Ionicons name="briefcase" size={20} color="#8B2BE2" style={styles.fieldIcon} />
               <Text style={styles.fieldLabel}>Occupation</Text>
               {!occupation && <Ionicons name="alert-circle" size={16} color="#F4B400" style={styles.fieldWarningIcon} />}
             </View>
@@ -1009,7 +1060,8 @@ const ProfileScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => setEditMode('occupation')}>
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               </TouchableOpacity>
             )}
           </View>
@@ -1030,7 +1082,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   }
                 }}
                 placeholder="e.g., Software Engineer, Doctor, Student..."
-                placeholderTextColor="#7F93AA"
+                placeholderTextColor="rgba(255,255,255,0.35)"
                 maxLength={50}
                 autoFocus
               />
@@ -1080,7 +1132,8 @@ const ProfileScreen = ({ navigation }: any) => {
                   setEditMode('interests');
                 }}
               >
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               </TouchableOpacity>
             )}
           </View>
@@ -1139,7 +1192,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => setExpandedCategory(isExpanded ? null : category.id)}
                         activeOpacity={0.7}
                       >
-                        <Ionicons name={category.icon as any} size={32} color={isExpanded ? "#FFFFFF" : "#378BBB"} />
+                        <Ionicons name={category.icon as any} size={32} color={isExpanded ? "#FFFFFF" : "#A855F7"} />
                         {selectedCount > 0 && (
                           <View style={styles.iconBadge}>
                             <Text style={styles.iconBadgeText}>{selectedCount}</Text>
@@ -1167,7 +1220,7 @@ const ProfileScreen = ({ navigation }: any) => {
                             activeOpacity={0.7}
                             style={styles.closeButton}
                           >
-                            <Ionicons name="close" size={24} color="#7F93AA" />
+                            <Ionicons name="close" size={24} color="rgba(255,255,255,0.55)" />
                           </TouchableOpacity>
                         </View>
                         
@@ -1238,7 +1291,8 @@ const ProfileScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => setEditMode('gender')}>
-                    <Ionicons name="pencil" size={22} color="#378BBB" />
+                    {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                    <Ionicons name="pencil" size={22} color="#A855F7" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1287,7 +1341,8 @@ const ProfileScreen = ({ navigation }: any) => {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => setEditMode('intent')}>
-                    <Ionicons name="pencil" size={22} color="#378BBB" />
+                    {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                    <Ionicons name="pencil" size={22} color="#A855F7" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1306,7 +1361,7 @@ const ProfileScreen = ({ navigation }: any) => {
                       <Ionicons
                         name={option.icon as any}
                         size={20}
-                        color={relationshipIntent === option.value ? '#FFFFFF' : '#666666'}
+                        color={relationshipIntent === option.value ? '#FFFFFF' : 'rgba(255,255,255,0.55)'}
                       />
                       <Text
                         style={[
@@ -1340,7 +1395,8 @@ const ProfileScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => setEditMode('radius')}>
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               </TouchableOpacity>
             )}
           </View>
@@ -1353,9 +1409,9 @@ const ProfileScreen = ({ navigation }: any) => {
               step={1}
               value={matchRadiusKm}
               onValueChange={setMatchRadiusKm}
-              minimumTrackTintColor="#378BBB"
-              maximumTrackTintColor="#233B57"
-              thumbTintColor="#378BBB"
+              minimumTrackTintColor="#8B2BE2"
+              maximumTrackTintColor="rgba(255,255,255,0.12)"
+              thumbTintColor="#06B6D4"
             />
           )}
         </View>
@@ -1374,16 +1430,16 @@ const ProfileScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => setEditMode('social')}>
-                <Ionicons name="pencil" size={22} color="#378BBB" />
+                {/* <Ionicons name="pencil" size={22} color="#8B2BE2" /> */}
+                <Ionicons name="pencil" size={22} color="#A855F7" />
               </TouchableOpacity>
             )}
           </View>
           
           {editMode === 'social' ? (
             <View style={styles.socialEditContainer}>
-              {/* Row 1: Instagram and Facebook */}
-              <View style={styles.twoColumnRow}>
-                <View style={styles.columnLeft}>
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   <View style={styles.socialInputRow}>
                     <Ionicons name="logo-instagram" size={22} color="#E4405F" />
                     <TextInput
@@ -1391,13 +1447,16 @@ const ProfileScreen = ({ navigation }: any) => {
                       value={instagram}
                       onChangeText={setInstagram}
                       placeholder="@username"
-                      placeholderTextColor="#7F93AA"
+                      placeholderTextColor="rgba(255,255,255,0.35)"
                       autoCapitalize="none"
                       maxLength={30}
                     />
                   </View>
                 </View>
-                <View style={styles.columnRight}>
+              </View>
+
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   <View style={styles.socialInputRow}>
                     <Ionicons name="logo-facebook" size={22} color="#1877F2" />
                     <TextInput
@@ -1405,7 +1464,7 @@ const ProfileScreen = ({ navigation }: any) => {
                       value={facebook}
                       onChangeText={setFacebook}
                       placeholder="username"
-                      placeholderTextColor="#7F93AA"
+                      placeholderTextColor="rgba(255,255,255,0.35)"
                       autoCapitalize="none"
                       maxLength={100}
                     />
@@ -1413,9 +1472,8 @@ const ProfileScreen = ({ navigation }: any) => {
                 </View>
               </View>
 
-              {/* Row 2: LinkedIn and X */}
-              <View style={styles.twoColumnRow}>
-                <View style={styles.columnLeft}>
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   <View style={styles.socialInputRow}>
                     <Ionicons name="logo-linkedin" size={22} color="#0A66C2" />
                     <TextInput
@@ -1423,13 +1481,16 @@ const ProfileScreen = ({ navigation }: any) => {
                       value={linkedin}
                       onChangeText={setLinkedin}
                       placeholder="username"
-                      placeholderTextColor="#7F93AA"
+                      placeholderTextColor="rgba(255,255,255,0.35)"
                       autoCapitalize="none"
                       maxLength={100}
                     />
                   </View>
                 </View>
-                <View style={styles.columnRight}>
+              </View>
+
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   <View style={styles.socialInputRow}>
                     <Text style={styles.xLogoSmall}>𝕏</Text>
                     <TextInput
@@ -1437,7 +1498,7 @@ const ProfileScreen = ({ navigation }: any) => {
                       value={twitter}
                       onChangeText={setTwitter}
                       placeholder="@username"
-                      placeholderTextColor="#7F93AA"
+                      placeholderTextColor="rgba(255,255,255,0.35)"
                       autoCapitalize="none"
                       maxLength={30}
                     />
@@ -1447,9 +1508,8 @@ const ProfileScreen = ({ navigation }: any) => {
             </View>
           ) : (
             <View style={styles.socialDisplayContainer}>
-              {/* Row 1: Instagram and Facebook */}
-              <View style={styles.twoColumnRow}>
-                <View style={styles.columnLeft}>
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   {instagram ? (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
@@ -1460,13 +1520,16 @@ const ProfileScreen = ({ navigation }: any) => {
                   ) : (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
-                        <Ionicons name="logo-instagram" size={18} color="#7F93AA" />
+                        <Ionicons name="logo-instagram" size={18} color="rgba(255,255,255,0.55)" />
                         <Text style={styles.socialDisplayTextEmpty}>Not set</Text>
                       </View>
                     </View>
                   )}
                 </View>
-                <View style={styles.columnRight}>
+              </View>
+
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   {facebook ? (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
@@ -1477,7 +1540,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   ) : (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
-                        <Ionicons name="logo-facebook" size={18} color="#7F93AA" />
+                        <Ionicons name="logo-facebook" size={18} color="rgba(255,255,255,0.55)" />
                         <Text style={styles.socialDisplayTextEmpty}>Not set</Text>
                       </View>
                     </View>
@@ -1485,9 +1548,8 @@ const ProfileScreen = ({ navigation }: any) => {
                 </View>
               </View>
 
-              {/* Row 2: LinkedIn and X */}
-              <View style={styles.twoColumnRow}>
-                <View style={styles.columnLeft}>
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   {linkedin ? (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
@@ -1498,13 +1560,16 @@ const ProfileScreen = ({ navigation }: any) => {
                   ) : (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
-                        <Ionicons name="logo-linkedin" size={18} color="#7F93AA" />
+                        <Ionicons name="logo-linkedin" size={18} color="rgba(255,255,255,0.55)" />
                         <Text style={styles.socialDisplayTextEmpty}>Not set</Text>
                       </View>
                     </View>
                   )}
                 </View>
-                <View style={styles.columnRight}>
+              </View>
+
+              <View style={styles.socialSingleRow}>
+                <View style={styles.socialSingleItem}>
                   {twitter ? (
                     <View style={styles.socialDisplayBox}>
                       <View style={styles.socialDisplayRow}>
@@ -1526,10 +1591,11 @@ const ProfileScreen = ({ navigation }: any) => {
           )}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 24 }} />
       </KeyboardAwareScrollView>
 
     </View>
+    </ImageBackground>
   );
 };
 
@@ -1537,41 +1603,58 @@ const ProfileScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0E1621',
+    // backgroundColor: '#0D0B1E',
   },
   errorText: {
     fontSize: 16,
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Inter-Regular',
   },
   scrollView: {
     flex: 1,
   },
+  // header: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   paddingHorizontal: 20,
+  //   paddingTop: 50,
+  //   paddingBottom: 20,
+  //   backgroundColor: '#0D0B1E',
+  //   borderBottomWidth: 2,
+  //   borderBottomColor: '#0D0B1E',
+  //   shadowColor: '#8B2BE2',
+  //   shadowOffset: { width: 0, height: 0 },
+  //   shadowOpacity: 0.8,
+  //   shadowRadius: 8,
+  //   elevation: 10,
+  //   zIndex: 1000,
+  // },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-    backgroundColor: '#0E1621',
-    borderBottomWidth: 2,
-    borderBottomColor: '#0E1621',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 1000,
+    paddingBottom: 18,
+    backgroundColor: 'rgba(13, 11, 30, 0.72)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
+    position: 'relative',
+    zIndex: 2000,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
   headerActions: {
@@ -1609,16 +1692,18 @@ const styles = StyleSheet.create({
     left: 10,
   },
   completenessChip: {
-    backgroundColor: '#1B2F48',
+    backgroundColor: 'rgba(139, 92, 246, 0.16)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   completenessText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#378BBB',
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
   },
   usernameContainer: {
     width: '100%',
@@ -1631,19 +1716,22 @@ const styles = StyleSheet.create({
   },
   usernameText: {
     fontSize: 20,
-    color: '#B8C7D9',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Medium',
     textAlign: 'center',
   },
   usernameInput: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#FFFFFF',
-    borderBottomWidth: 2,
-    borderBottomColor: '#378BBB',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    minWidth: 120,
+    backgroundColor: '#16112B',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.80)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    minWidth: 160,
     textAlign: 'center',
+    fontFamily: 'Inter-Regular',
   },
   usernameEditButton: {
     position: 'absolute',
@@ -1653,12 +1741,12 @@ const styles = StyleSheet.create({
   },
   usernameSaveText: {
     fontSize: 14,
-    color: '#378BBB',
-    fontWeight: '600',
+    color: '#22D3EE',
+    fontFamily: 'Inter-SemiBold',
   },
   missingText: {
     fontSize: 12,
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -1681,96 +1769,109 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   fieldValue: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 12,
     marginLeft: 20,
   },
   fieldValueBox: {
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 12,
     marginLeft: 20,
   },
   fieldValueBoxText: {
     fontSize: 15,
-    color: '#B8C7D9',
-  },
-  twoColumnRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  columnLeft: {
-    flex: 1,
-  },
-  columnRight: {
-    flex: 1,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Regular',
   },
   fieldInput: {
+    height: 54,
     fontSize: 16,
     color: '#FFFFFF',
-    borderBottomWidth: 2,
-    borderBottomColor: '#378BBB',
-    paddingBottom: 8,
+    backgroundColor: '#16112B',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.80)',
+    borderRadius: 14,
+    paddingHorizontal: 18,
     marginBottom: 12,
-    marginLeft: 26,
-  },
-  bioFieldInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
+    marginLeft: 20,
+    fontFamily: 'Inter-Regular',
   },
   bioDisplayBox: {
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 12,
     marginLeft: 20,
-    minHeight: 80,
+    minHeight: 100,
   },
   bioDisplayText: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: '#FFFFFF',
     lineHeight: 22,
+    fontFamily: 'Inter-Regular',
+  },
+  bioFieldInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    paddingTop: 14,
+    paddingBottom: 14,
   },
   fieldDivider: {
     height: 1,
-    backgroundColor: '#233B57',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     marginVertical: 12,
   },
   settingsIconContainer: {
     position: 'relative',
-    zIndex: 1001,
+    zIndex: 2100,
   },
   gearIcon: {
     padding: 8,
   },
+  // settingsDropdown: {
+  //   position: 'absolute',
+  //   top: 40,
+  //   right: 0,
+  //   backgroundColor: '#1A1530',
+  //   borderRadius: 12,
+  //   borderWidth: 2,
+  //   borderColor: '#8B2BE2',
+  //   minWidth: 200,
+  //   shadowColor: '#8B2BE2',
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.3,
+  //   shadowRadius: 8,
+  //   elevation: 20,
+  //   zIndex: 1002,
+  // },
   settingsDropdown: {
     position: 'absolute',
     top: 40,
     right: 0,
-    backgroundColor: '#16283D',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    minWidth: 200,
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: '#1A1530',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    minWidth: 220,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     elevation: 20,
-    zIndex: 1002,
+    zIndex: 2200,
   },
   dropdownItem: {
     flexDirection: 'row',
@@ -1782,18 +1883,21 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 15,
     color: '#FFFFFF',
+    fontFamily: 'Inter-Medium',
   },
   dropdownDivider: {
     height: 1,
-    backgroundColor: '#233B57',
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
   section: {
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     marginTop: 12,
     marginHorizontal: 16,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.18)',
   },
   preferenceSubSection: {
     marginBottom: 20,
@@ -1803,17 +1907,17 @@ const styles = StyleSheet.create({
   },
   preferenceDivider: {
     height: 1,
-    backgroundColor: '#233B57',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     marginVertical: 20,
   },
   aboutMeHeader: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 20,
     paddingBottom: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: '#378BBB',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.10)',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1831,13 +1935,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   saveButton: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#378BBB',
+    fontFamily: 'Inter-SemiBold',
+    color: '#22D3EE',
   },
   infoRow: {
     flexDirection: 'row',
@@ -1851,7 +1955,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 2,
   },
   infoValue: {
@@ -1861,12 +1965,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 2,
-    borderColor: '#233B57',
+    borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
     color: '#FFFFFF',
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
   },
   bioInput: {
     height: 100,
@@ -1874,7 +1978,7 @@ const styles = StyleSheet.create({
   },
   displayValue: {
     fontSize: 16,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     lineHeight: 24,
   },
   // Interests Section - Matching Signup Design
@@ -1884,42 +1988,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   countText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#378BBB',
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
   },
   minText: {
     fontSize: 14,
-    color: '#7F93AA',
-  },
-  minTextSuccess: {
-    color: '#2ECC71',
-  },
-  selectedChipsScroll: {
-    marginBottom: 12,
-  },
-  selectedChipsContainer: {
-    paddingVertical: 4,
-    gap: 8,
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Inter-Regular',
   },
   selectedChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#378BBB',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderWidth: 1,
+    borderColor: '#8B2BE2',
+    minHeight: 40,
   },
   selectedChipText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
+  },
+  selectedChipsScroll: {
+    marginBottom: 14,
+  },
+  selectedChipsContainer: {
+    paddingRight: 8,
+    gap: 10,
   },
   categoriesScroll: {
     paddingVertical: 16,
@@ -1935,24 +2042,17 @@ const styles = StyleSheet.create({
   categoryIconButton: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#16283D',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
     position: 'relative',
   },
   categoryIconButtonActive: {
-    backgroundColor: '#378BBB',
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 8,
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B2BE2',
   },
   iconBadge: {
     position: 'absolute',
@@ -1971,17 +2071,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   expandedSection: {
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     marginTop: 8,
     borderRadius: 16,
     padding: 16,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   expandedHeader: {
     flexDirection: 'row',
@@ -2003,7 +2098,7 @@ const styles = StyleSheet.create({
   categoryContainer: {
     marginBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
+    borderBottomColor: 'rgba(255,255,255,0.12)',
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -2024,7 +2119,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryBadge: {
-    backgroundColor: '#378BBB',
+    backgroundColor: '#8B2BE2',
     borderRadius: 12,
     minWidth: 24,
     height: 24,
@@ -2040,7 +2135,7 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
     paddingBottom: 12,
   },
   interestTag: {
@@ -2048,40 +2143,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1B2F48',
-    borderWidth: 2,
-    borderColor: '#233B57',
+    paddingVertical: 9,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
+    minHeight: 38,
   },
   interestTagSelected: {
-    backgroundColor: '#378BBB',
-    borderColor: '#378BBB',
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B2BE2',
   },
   interestTagText: {
-    fontSize: 14,
-    color: '#B8C7D9',
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   interestTagTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   interestsDisplay: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   interestDisplayTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 16,
-    backgroundColor: '#1B2F48',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
-    borderColor: '#378BBB',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   interestDisplayTagText: {
-    fontSize: 14,
-    color: '#B8C7D9',
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   interestsGrid: {
     flexDirection: 'row',
@@ -2120,21 +2218,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#1B2F48',
-    borderWidth: 2,
-    borderColor: '#233B57',
+    backgroundColor: '#16112B',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   optionButtonSelected: {
-    backgroundColor: '#378BBB',
-    borderColor: '#378BBB',
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B2BE2',
   },
   optionText: {
     fontSize: 14,
-    color: '#B8C7D9',
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Regular',
   },
   optionTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   slider: {
     width: '100%',
@@ -2190,10 +2289,10 @@ const styles = StyleSheet.create({
   heightInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#233B57',
+    borderColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 14,
   },
   heightIcon: {
@@ -2207,7 +2306,7 @@ const styles = StyleSheet.create({
   },
   heightUnit: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -2219,7 +2318,8 @@ const styles = StyleSheet.create({
   socialInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    width: '100%',
   },
   socialIconWrapper: {
     width: 36,
@@ -2230,64 +2330,92 @@ const styles = StyleSheet.create({
   },
   socialInput: {
     flex: 1,
-    padding: 14,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#233B57',
+    height: 54,
+    paddingHorizontal: 16,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
     fontSize: 15,
     color: '#FFFFFF',
+    fontFamily: 'Inter-Regular',
+  },
+  socialGridRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  socialGridItem: {
+    flex: 1,
+  },
+  socialSingleRow: {
+    width: '100%',
+  },
+
+  socialSingleItem: {
+    width: '100%',
   },
   xLogoSmall: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
+    width: 22,
+    textAlign: 'center',
   },
   socialDisplayContainer: {
     marginTop: 4,
     gap: 12,
   },
   socialDisplayBox: {
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    padding: 14,
-    minHeight: 52,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    minHeight: 54,
     justifyContent: 'center',
+    width: '100%',
   },
   socialDisplayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    width: '100%',
   },
   socialDisplayText: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: '#FFFFFF',
     flex: 1,
+    fontFamily: 'Inter-Regular',
   },
   socialDisplayTextEmpty: {
     fontSize: 15,
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
     flex: 1,
+    fontFamily: 'Inter-Regular',
   },
   xLogoDisplay: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
+    width: 18,
+    textAlign: 'center',
   },
   xLogoDisplayGray: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
+    width: 18,
+    textAlign: 'center',
   },
   // Occupation autocomplete styles - inline list (not absolute positioned)
   suggestionsList: {
     marginTop: 8,
-    backgroundColor: '#16283D',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#233B57',
+    backgroundColor: '#1A1530',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
     overflow: 'hidden',
   },
   suggestionItemInline: {
@@ -2297,12 +2425,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
-    backgroundColor: '#16283D',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#1A1530',
   },
   suggestionTextInline: {
     fontSize: 15,
     color: '#FFFFFF',
+    fontFamily: 'Inter-Regular',
   },
 });
 
