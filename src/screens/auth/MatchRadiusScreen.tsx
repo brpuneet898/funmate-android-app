@@ -46,8 +46,8 @@ const SNAP_OFFSETS = RADIUS_STEPS.map((_, i) => i * TICK_WIDTH);
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface MatchRadiusScreenProps {
-  navigation: any;
-  route: {
+  navigation?: any;
+  route?: {
     params?: {
       relationshipIntent?: RelationshipIntent | null;
       interestedIn?: Gender[];
@@ -57,8 +57,8 @@ interface MatchRadiusScreenProps {
 
 const MatchRadiusScreen: React.FC<MatchRadiusScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const relationshipIntent = route.params?.relationshipIntent ?? null;
-  const interestedIn = route.params?.interestedIn ?? [];
+  const relationshipIntent = route?.params?.relationshipIntent ?? null;
+  const interestedIn = route?.params?.interestedIn ?? [];
 
   const [selectedIndex, setSelectedIndex] = useState(DEFAULT_INDEX);
   const scrollRef = useRef<ScrollView>(null);

@@ -57,113 +57,11 @@ const OCCUPATION_SUGGESTIONS = [
   'CA', 'CS', 'MBA', 'PhD Student', 'Medical Student', 'Law Student',
 ];
 
-// ── Glowing inputs ─────────────────────────────────────────────────────────────
-
-const GlowingTextArea: React.FC<{
-  style: any;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder: string;
-  maxLength?: number;
-}> = ({ style, value, onChangeText, placeholder, maxLength }) => {
-  const [focused, setFocused] = useState(false);
-  return (
-    <TextInput
-      style={[
-        style,
-        focused && {
-          borderColor: '#A855F7',
-          shadowColor: '#A855F7',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.55,
-          shadowRadius: 12,
-          elevation: 8,
-        },
-      ]}
-      placeholder={placeholder}
-      placeholderTextColor="#475569"
-      value={value}
-      onChangeText={onChangeText}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      multiline
-      maxLength={maxLength}
-      textAlignVertical="top"
-    />
-  );
-};
-
-const GlowingInputRow: React.FC<{
-  wrapperStyle: any;
-  icon: string;
-  children: React.ReactNode;
-}> = ({ wrapperStyle, icon, children }) => {
-  const [focused, setFocused] = useState(false);
-  return (
-    <View
-      style={[
-        wrapperStyle,
-        focused && {
-          borderColor: '#A855F7',
-          shadowColor: '#A855F7',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.55,
-          shadowRadius: 12,
-          elevation: 8,
-        },
-      ]}
-    >
-      <Ionicons name={icon as any} size={22} color="#A855F7" style={{ marginRight: 12 }} />
-      {React.Children.map(children, (child) =>
-        React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, {
-              onFocus: () => setFocused(true),
-              onBlur: () => setFocused(false),
-            })
-          : child,
-      )}
-    </View>
-  );
-};
-
-const GlowingSocialInput: React.FC<{
-  style: any;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder: string;
-  maxLength?: number;
-}> = ({ style, value, onChangeText, placeholder, maxLength }) => {
-  const [focused, setFocused] = useState(false);
-  return (
-    <TextInput
-      style={[
-        style,
-        focused && {
-          borderColor: '#A855F7',
-          shadowColor: '#A855F7',
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.55,
-          shadowRadius: 12,
-          elevation: 8,
-        },
-      ]}
-      placeholder={placeholder}
-      placeholderTextColor="#475569"
-      value={value}
-      onChangeText={onChangeText}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      autoCapitalize="none"
-      maxLength={maxLength}
-    />
-  );
-};
-
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface AboutMeScreenProps {
-  navigation: any;
-  route: {
+  navigation?: any;
+  route?: {
     params?: {
       relationshipIntent?: RelationshipIntent | null;
       interestedIn?: Gender[];
@@ -176,15 +74,16 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
 
   // Deferred data from previous steps (defaults if skipped)
-  const relationshipIntent = route.params?.relationshipIntent ?? null;
-  const interestedIn: Gender[] = route.params?.interestedIn ?? [];
-  const matchRadiusKm = route.params?.matchRadiusKm ?? 25;
+  const relationshipIntent = route?.params?.relationshipIntent ?? null;
+  const interestedIn: Gender[] = route?.params?.interestedIn ?? [];
+  const matchRadiusKm = route?.params?.matchRadiusKm ?? 25;
 
   // Own fields
   const [bio, setBio] = useState('');
   const [height, setHeight] = useState<number | null>(null);
   const [occupation, setOccupation] = useState('');
   const [filteredOccupations, setFilteredOccupations] = useState<string[]>([]);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   // Social handles
   const [instagram, setInstagram] = useState('');
@@ -276,6 +175,45 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
     }
   };
 
+  /** Skip – save deferred prefs with empty AboutMe fields and go to MainTabs */
+  const handleSkip = async () => {
+    setSaving(true);
+    try {
+      const userId = auth().currentUser?.uid;
+      if (!userId) throw new Error('Not authenticated');
+
+      await firestore()
+        .collection('users')
+        .doc(userId)
+        .update({
+          bio: null,
+          height: null,
+          occupation: null,
+          socialHandles: null,
+          relationshipIntent,
+          interestedIn,
+          matchRadiusKm,
+          signupComplete: true,
+        });
+
+      await firestore().collection('accounts').doc(userId).update({
+        signupStep: 'complete',
+        status: 'active',
+      });
+
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as never }] });
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Could not skip. Please try again.',
+        visibilityTime: 3000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const bioLen = bio.length;
   const bioShowInvalid = bioLen > 0 && bioLen < 20;
   const bioValid = bioLen === 0 || (bioLen >= 20 && bioLen <= 500);
@@ -309,17 +247,26 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
             <Text style={styles.appName}>Funmate</Text>
           </View>
 
-          {/* Spacer to balance the back button */}
-          <View style={styles.headerSpacer} />
+          {/* Skip (right) */}
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkip}
+            disabled={saving}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.skipText}>Skip</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Scrollable form ───────────────────────── */}
         <KeyboardAwareScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
           enableOnAndroid={true}
           extraScrollHeight={100}
           extraHeight={150}
+          enableAutomaticScroll={true}
           keyboardOpeningTime={0}
           showsVerticalScrollIndicator={false}
         >
@@ -332,12 +279,18 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
             <Text style={styles.sectionSub}>Tell others what makes you unique</Text>
 
             <View style={styles.textAreaWrap}>
-              <GlowingTextArea
-                style={styles.textArea}
+              <TextInput
+                style={[styles.textArea, focusedInput === 'bio' && styles.inputFocused]}
                 placeholder="I love hiking, trying new restaurants, binge-watching sci-fi…"
+                placeholderTextColor="#475569"
                 value={bio}
                 onChangeText={setBio}
+                onFocus={() => setFocusedInput('bio')}
+                onBlur={() => setFocusedInput(null)}
+                multiline
+                scrollEnabled={false}
                 maxLength={500}
+                textAlignVertical="top"
               />
               <Text
                 style={[
@@ -357,7 +310,8 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Height</Text>
             <Text style={styles.sectionSub}>Optional but helps with matching</Text>
 
-            <GlowingInputRow wrapperStyle={styles.inputRow} icon="body-outline">
+            <View style={[styles.inputRow, focusedInput === 'height' && styles.inputFocused]}>
+              <Ionicons name="body-outline" size={22} color="#A855F7" style={{ marginRight: 12 }} />
               <TextInput
                 style={styles.inputField}
                 placeholder="Enter height in cm"
@@ -368,11 +322,13 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
                   const n = parseInt(t, 10);
                   if (!isNaN(n) && n > 0 && n <= 300) setHeight(n);
                 }}
+                onFocus={() => setFocusedInput('height')}
+                onBlur={() => setFocusedInput(null)}
                 keyboardType="numeric"
                 maxLength={3}
               />
               <Text style={styles.inputUnit}>cm</Text>
-            </GlowingInputRow>
+            </View>
           </View>
 
           {/* ── Occupation ──────────────────────────── */}
@@ -381,16 +337,19 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
             <Text style={styles.sectionSub}>What do you do?</Text>
 
             <View>
-              <GlowingInputRow wrapperStyle={styles.inputRow} icon="briefcase-outline">
+              <View style={[styles.inputRow, focusedInput === 'occupation' && styles.inputFocused]}>
+                <Ionicons name="briefcase-outline" size={22} color="#A855F7" style={{ marginRight: 12 }} />
                 <TextInput
                   style={styles.inputField}
                   placeholder="e.g., Software Engineer, Doctor…"
                   placeholderTextColor="#475569"
                   value={occupation}
                   onChangeText={handleOccupationChange}
+                  onFocus={() => setFocusedInput('occupation')}
+                  onBlur={() => setFocusedInput(null)}
                   maxLength={50}
                 />
-              </GlowingInputRow>
+              </View>
 
               {filteredOccupations.length > 0 && occupation.length >= 2 && (
                 <View style={styles.suggestionsList}>
@@ -422,11 +381,15 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
                 <View style={[styles.socialIcon, { backgroundColor: '#E4405F' }]}>
                   <Ionicons name="logo-instagram" size={18} color="#FFFFFF" />
                 </View>
-                <GlowingSocialInput
-                  style={styles.socialInput}
+                <TextInput
+                  style={[styles.socialInput, focusedInput === 'instagram' && styles.inputFocused]}
                   placeholder="@username"
+                  placeholderTextColor="#475569"
                   value={instagram}
                   onChangeText={setInstagram}
+                  onFocus={() => setFocusedInput('instagram')}
+                  onBlur={() => setFocusedInput(null)}
+                  autoCapitalize="none"
                   maxLength={30}
                 />
               </View>
@@ -436,11 +399,15 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
                 <View style={[styles.socialIcon, { backgroundColor: '#0A66C2' }]}>
                   <Ionicons name="logo-linkedin" size={18} color="#FFFFFF" />
                 </View>
-                <GlowingSocialInput
-                  style={styles.socialInput}
+                <TextInput
+                  style={[styles.socialInput, focusedInput === 'linkedin' && styles.inputFocused]}
                   placeholder="Profile URL or username"
+                  placeholderTextColor="#475569"
                   value={linkedin}
                   onChangeText={setLinkedin}
+                  onFocus={() => setFocusedInput('linkedin')}
+                  onBlur={() => setFocusedInput(null)}
+                  autoCapitalize="none"
                   maxLength={100}
                 />
               </View>
@@ -450,11 +417,15 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
                 <View style={[styles.socialIcon, { backgroundColor: '#1877F2' }]}>
                   <Ionicons name="logo-facebook" size={18} color="#FFFFFF" />
                 </View>
-                <GlowingSocialInput
-                  style={styles.socialInput}
+                <TextInput
+                  style={[styles.socialInput, focusedInput === 'facebook' && styles.inputFocused]}
                   placeholder="Profile URL or username"
+                  placeholderTextColor="#475569"
                   value={facebook}
                   onChangeText={setFacebook}
+                  onFocus={() => setFocusedInput('facebook')}
+                  onBlur={() => setFocusedInput(null)}
+                  autoCapitalize="none"
                   maxLength={100}
                 />
               </View>
@@ -464,11 +435,15 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
                 <View style={[styles.socialIcon, { backgroundColor: '#000000' }]}>
                   <Text style={styles.xLogo}>𝕏</Text>
                 </View>
-                <GlowingSocialInput
-                  style={styles.socialInput}
+                <TextInput
+                  style={[styles.socialInput, focusedInput === 'twitter' && styles.inputFocused]}
                   placeholder="@username"
+                  placeholderTextColor="#475569"
                   value={twitter}
                   onChangeText={setTwitter}
+                  onFocus={() => setFocusedInput('twitter')}
+                  onBlur={() => setFocusedInput(null)}
+                  autoCapitalize="none"
                   maxLength={30}
                 />
               </View>
@@ -490,7 +465,6 @@ const AboutMeScreen: React.FC<AboutMeScreenProps> = ({ navigation, route }) => {
               <Text style={styles.completeBtnText}>
                 {saving ? 'Saving…' : 'Complete Profile'}
               </Text>
-              {!saving && <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -532,13 +506,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
-  headerSpacer: { width: 40 },
+  skipBtn: {
+    width: 40,
+    alignItems: 'flex-end',
+    paddingVertical: 6,
+  },
+  skipText: {
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+    color: '#A855F7',
+  },
 
   /* Scroll */
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
+    paddingBottom: 120,
   },
 
   title: {
@@ -595,7 +579,12 @@ const styles = StyleSheet.create({
   charCountOk: { color: '#10B981' },
   charCountBad: { color: '#EF4444' },
 
-  /* Generic glowing input row */
+  /* Focused glow — applied to any input */
+  inputFocused: {
+    borderColor: '#A855F7',
+  },
+
+  /* Generic input row */
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',

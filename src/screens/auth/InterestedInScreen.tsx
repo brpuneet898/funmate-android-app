@@ -64,8 +64,8 @@ const GENDER_OPTIONS: {
 ];
 
 interface InterestedInScreenProps {
-  navigation: any;
-  route: {
+  navigation?: any;
+  route?: {
     params?: {
       relationshipIntent?: RelationshipIntent | null;
     };
@@ -74,7 +74,7 @@ interface InterestedInScreenProps {
 
 const InterestedInScreen: React.FC<InterestedInScreenProps> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const relationshipIntent = route.params?.relationshipIntent ?? null;
+  const relationshipIntent = route?.params?.relationshipIntent ?? null;
   const [selected, setSelected] = useState<Gender[]>([]);
 
   const toggleGender = (g: Gender) => {

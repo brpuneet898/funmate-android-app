@@ -107,9 +107,9 @@ export type RootStackParamList = {
   LivenessVerification: undefined;
   InterestsSelection: undefined;
   LookingFor: undefined;
-  InterestedIn: { relationshipIntent: string | null };
-  MatchRadius: { relationshipIntent: string | null; interestedIn: string[] };
-  AboutMe: { relationshipIntent: string | null; interestedIn: string[]; matchRadiusKm: number };
+  InterestedIn: { relationshipIntent?: string | null } | undefined;
+  MatchRadius: { relationshipIntent?: string | null; interestedIn?: string[] } | undefined;
+  AboutMe: { relationshipIntent?: string | null; interestedIn?: string[]; matchRadiusKm?: number } | undefined;
   LikesSwiper: { clickedUserId: string };
   Chat: {
     chatId: string | null;

@@ -22,13 +22,10 @@ import {
   ScrollView,
   ImageBackground,
   Image,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Toast from 'react-native-toast-message';
-import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 
 type RelationshipIntent = 'casual' | 'long_term' | 'hookups' | 'friendship' | 'unsure';
@@ -84,7 +81,6 @@ interface LookingForScreenProps {
 const LookingForScreen: React.FC<LookingForScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<RelationshipIntent | null>(null);
-  const [saving, setSaving] = useState(false);
 
   /** Sign out and return to Login */
   const handleLogout = async () => {
@@ -96,44 +92,9 @@ const LookingForScreen: React.FC<LookingForScreenProps> = ({ navigation }) => {
     }
   };
 
-  /**
-   * Skip entire preferences flow – write empty defaults and mark signup complete.
-   * This is the only path that writes to DB before the final screen.
-   */
-  const handleSkipAll = async () => {
-    setSaving(true);
-    try {
-      const userId = auth().currentUser?.uid;
-      if (!userId) throw new Error('Not authenticated');
-
-      await firestore().collection('users').doc(userId).update({
-        bio: '',
-        height: null,
-        occupation: null,
-        socialHandles: null,
-        relationshipIntent: null,
-        interestedIn: [],
-        matchRadiusKm: 25,
-        signupComplete: true,
-      });
-
-      await firestore().collection('accounts').doc(userId).update({
-        signupStep: 'complete',
-        status: 'active',
-      });
-
-      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' as never }] });
-    } catch (error: any) {
-      console.error('Skip error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: error.message || 'Could not skip. Please try again.',
-        visibilityTime: 3000,
-      });
-    } finally {
-      setSaving(false);
-    }
+  /** Skip – move to the next screen without saving anything here */
+  const handleSkip = () => {
+    navigation.navigate('InterestedIn' as never);
   };
 
   /** Move forward – pass selection as nav param, no DB write */
@@ -187,15 +148,10 @@ const LookingForScreen: React.FC<LookingForScreenProps> = ({ navigation }) => {
           {/* Skip (right) */}
           <TouchableOpacity
             style={styles.skipBtn}
-            onPress={handleSkipAll}
-            disabled={saving}
+            onPress={handleSkip}
             activeOpacity={0.7}
           >
-            {saving ? (
-              <ActivityIndicator size="small" color="#A855F7" />
-            ) : (
-              <Text style={styles.skipText}>Skip</Text>
-            )}
+            <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
         </View>
 
@@ -264,7 +220,7 @@ const LookingForScreen: React.FC<LookingForScreenProps> = ({ navigation }) => {
 
         {/* ── Continue button ───────────────────────── */}
         <View style={[styles.footer, { paddingBottom: Math.max(32, insets.bottom + 16) }]}>
-          <TouchableOpacity onPress={handleContinue} activeOpacity={0.85} disabled={saving}>
+          <TouchableOpacity onPress={handleContinue} activeOpacity={0.85}>
             <LinearGradient
               colors={['#8B2BE2', '#06B6D4']}
               start={{ x: 0, y: 0 }}
