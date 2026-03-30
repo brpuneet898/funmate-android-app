@@ -57,25 +57,25 @@ const HostTabNavigator = () => {
             </View>
           );
         },
-        tabBarActiveTintColor: '#FF4D6D',
-        tabBarInactiveTintColor: '#378BBB',
+        tabBarActiveTintColor: '#8B2BE2',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.55)',
         tabBarStyle: {
-          backgroundColor: '#16283D',
-          borderTopWidth: 2,
-          borderTopColor: '#378BBB',
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
-          paddingTop: 8,
-          shadowColor: '#378BBB',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.6,
-          shadowRadius: 12,
-          elevation: 15,
+          backgroundColor: '#0D0B1E',
+          borderTopWidth: 1,
+          borderTopColor: 'rgba(255, 255, 255, 0.12)',
+          height: 64 + insets.bottom,
+          paddingBottom: Math.max(10, insets.bottom),
+          paddingTop: 6,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: -6 },
+          shadowOpacity: 0.22,
+          shadowRadius: 16,
+          elevation: 12,
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
-          color: '#FFFFFF',
+          fontFamily: 'Inter-SemiBold',
+          marginBottom: 2,
         },
       })}
       initialRouteName="Dashboard"
@@ -114,11 +114,11 @@ const HostTabNavigator = () => {
 
 const styles = StyleSheet.create({
   activeIconContainer: {
-    shadowColor: '#FF4D6D',
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });
 
