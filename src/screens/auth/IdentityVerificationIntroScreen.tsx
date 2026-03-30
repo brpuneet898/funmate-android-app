@@ -13,46 +13,60 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface IdentityVerificationIntroScreenProps {
   navigation: any;
 }
 
 const IdentityVerificationIntroScreen: React.FC<IdentityVerificationIntroScreenProps> = ({ navigation }) => {
-  // Check if user can go back (not the initial route after app restart)
+  const insets = useSafeAreaInsets();
   const canGoBack = navigation.canGoBack();
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" translucent={true} />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.bg}
+      blurRadius={6}
+    >
+      <View style={styles.overlay} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      {/* Header - only show back button if user navigated here from another screen */}
-      {canGoBack && (
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerBtn}>
+          {canGoBack && (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
         </View>
-      )}
+        <View style={styles.logoRow}>
+          <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
+          <Text style={styles.appName}>Funmate</Text>
+        </View>
+        <View style={styles.headerBtn} />
+      </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          !canGoBack && styles.scrollContentNoHeader
+          { paddingBottom: Math.max(40, insets.bottom + 16) },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.iconContainer}>
-          <Ionicons name="shield-checkmark" size={80} color="#378BBB" />
+          <Ionicons name="shield-checkmark" size={72} color="#8B2BE2" />
         </View>
 
         <Text style={styles.title}>Verify Yourself</Text>
@@ -64,15 +78,15 @@ const IdentityVerificationIntroScreen: React.FC<IdentityVerificationIntroScreenP
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Why do we need this?</Text>
           <View style={styles.reasonCard}>
-            <Ionicons name="shield-checkmark-outline" size={24} color="#378BBB" />
+            <Ionicons name="shield-checkmark-outline" size={22} color="#8B2BE2" />
             <Text style={styles.reasonText}>Prevent fake profiles and catfishing</Text>
           </View>
           <View style={styles.reasonCard}>
-            <Ionicons name="people-outline" size={24} color="#378BBB" />
+            <Ionicons name="people-outline" size={22} color="#8B2BE2" />
             <Text style={styles.reasonText}>Build a trusted community</Text>
           </View>
           <View style={styles.reasonCard}>
-            <Ionicons name="heart-outline" size={24} color="#378BBB" />
+            <Ionicons name="heart-outline" size={22} color="#8B2BE2" />
             <Text style={styles.reasonText}>Ensure authentic connections</Text>
           </View>
         </View>
@@ -80,7 +94,7 @@ const IdentityVerificationIntroScreen: React.FC<IdentityVerificationIntroScreenP
         {/* How It Works */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>How it works:</Text>
-          
+
           <View style={styles.stepContainer}>
             <View style={styles.stepNumber}>
               <Text style={styles.stepNumberText}>1</Text>
@@ -129,7 +143,7 @@ const IdentityVerificationIntroScreen: React.FC<IdentityVerificationIntroScreenP
 
         {/* Privacy Note */}
         <View style={styles.privacyContainer}>
-          <Ionicons name="lock-closed" size={16} color="#666666" />
+          <Ionicons name="lock-closed" size={15} color="rgba(255,255,255,0.40)" />
           <Text style={styles.privacyText}>
             Your live selfie will not be saved. It's only used for verification.
           </Text>
@@ -138,219 +152,212 @@ const IdentityVerificationIntroScreen: React.FC<IdentityVerificationIntroScreenP
         {/* Start Button */}
         <TouchableOpacity
           onPress={() => navigation.navigate('LivenessVerification')}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           <LinearGradient
-            colors={['#378BBB', '#4FC3F7']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
+            colors={['#8B2BE2', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={styles.startButton}
           >
-            <Ionicons name="camera" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Ionicons name="camera" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
             <Text style={styles.startButtonText}>Start Verification</Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Skip Note */}
+        {/* Attempts note */}
         <Text style={styles.skipNote}>
           You have 5 attempts to complete verification
         </Text>
       </ScrollView>
-    </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  bg: {
     flex: 1,
-    backgroundColor: '#0E1621',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13,11,30,0.62)',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  headerBtn: {
+    width: 42,
+    height: 42,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  appName: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: 0.3,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  scrollContentNoHeader: {
-    paddingTop: 60, // Extra top padding when header is hidden
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: 24,
-    padding: 20,
-    borderRadius: 50,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    justifyContent: 'center',
+    marginBottom: 20,
+    padding: 22,
+    borderRadius: 60,
+    borderWidth: 1.5,
+    borderColor: 'rgba(200,200,215,0.28)',
+    backgroundColor: 'rgba(55,53,70,0.88)',
     alignSelf: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 32,
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: 'center',
-    fontFamily: 'Inter_24pt-Bold',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#B8C7D9',
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     marginBottom: 32,
-    lineHeight: 24,
-    fontFamily: 'Inter_24pt-Regular',
+    lineHeight: 22,
   },
   sectionContainer: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginBottom: 16,
-    fontFamily: 'Inter_24pt-Bold',
+    marginBottom: 14,
   },
   reasonCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
+    backgroundColor: 'rgba(55,53,70,0.88)',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 12,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: 'rgba(200,200,215,0.22)',
   },
   reasonText: {
     fontSize: 15,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     flex: 1,
-    fontFamily: 'Inter_24pt-Regular',
   },
   stepContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-    gap: 16,
+    marginBottom: 18,
+    gap: 14,
+    alignItems: 'flex-start',
   },
   stepNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#378BBB',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#8B2BE2',
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepNumberText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 15,
+    fontFamily: 'Inter-Bold',
   },
   stepContent: {
     flex: 1,
+    paddingTop: 4,
   },
   stepTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
     marginBottom: 4,
-    fontFamily: 'Inter_24pt-Bold',
   },
   stepDescription: {
     fontSize: 14,
-    color: '#B8C7D9',
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
     lineHeight: 20,
-    fontFamily: 'Inter_24pt-Regular',
   },
   tipsContainer: {
-    backgroundColor: '#16283D',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: 'rgba(26,21,48,0.88)',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   tipsTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginBottom: 12,
-    fontFamily: 'Inter_24pt-Bold',
+    marginBottom: 10,
   },
   tipText: {
     fontSize: 14,
-    color: '#B8C7D9',
-    marginBottom: 6,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 5,
     lineHeight: 20,
-    fontFamily: 'Inter_24pt-Regular',
   },
   privacyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 24,
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
   },
   privacyText: {
     fontSize: 13,
-    color: '#7F93AA',
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.40)',
     flex: 1,
     lineHeight: 18,
-    fontFamily: 'Inter_24pt-Regular',
   },
   startButton: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 18,
+    height: 54,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    height: 52,
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   startButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
   },
   skipNote: {
     fontSize: 13,
-    color: '#7F93AA',
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.40)',
     textAlign: 'center',
-    fontFamily: 'Inter_24pt-Regular',
   },
 });
 

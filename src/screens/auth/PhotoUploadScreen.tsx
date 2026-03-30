@@ -10,12 +10,14 @@ import {
   ImageBackground,
   ActivityIndicator,
   Dimensions,
+  Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
-import { launchImageLibrary, ImagePickerResponse, Asset } from 'react-native-image-picker';
+import { Asset } from 'react-native-image-picker';
+import ImageCropPicker from 'react-native-image-crop-picker';
 import storage from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
@@ -68,41 +70,32 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
   ]);
   const [uploading, setUploading] = useState(false);
 
+  // Crop preview modal state
+  const [cropPreview, setCropPreview] = useState<{
+    visible: boolean;
+    pendingUri: string | null;
+    targetIndex: number;
+  }>({ visible: false, pendingUri: null, targetIndex: -1 });
+
+  // Card aspect ratio — matches CARD_WIDTH/CARD_HEIGHT in SwipeHub & LikesSwiper
+  const { width: SW, height: SH } = Dimensions.get('window');
+  const CARD_CROP_WIDTH = Math.round(SW * 0.9);
+  const CARD_CROP_HEIGHT = Math.round(SH * 0.65);
+
   const handleSelectPhoto = async (index: number) => {
     try {
-      const result: ImagePickerResponse = await launchImageLibrary({
+      const image = await ImageCropPicker.openPicker({
         mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        selectionLimit: 1,
+        cropping: false,
       });
-
-      if (result.didCancel) {
-        return;
-      }
-
-      if (result.errorCode) {
-        Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: result.errorMessage || 'Failed to pick image',
-          visibilityTime: 3000,
-        });
-        return;
-      }
-
-      if (result.assets && result.assets[0]) {
-        const asset = result.assets[0];
-        const updatedPhotos = [...photos];
-        updatedPhotos[index] = {
-          localUri: asset.uri || null,
-          order: index + 1,
-          asset: asset,
-        };
-        setPhotos(updatedPhotos);
-      }
+      // Show preview modal so user can choose to crop or use as-is
+      setCropPreview({
+        visible: true,
+        pendingUri: image.path,
+        targetIndex: index,
+      });
     } catch (error: any) {
+      if (error?.code === 'E_PICKER_CANCELLED') return;
       console.error('Image picker error:', error);
       Toast.show({
         type: 'error',
@@ -111,6 +104,55 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
         visibilityTime: 3000,
       });
     }
+  };
+
+  const handleCropPhoto = async () => {
+    if (!cropPreview.pendingUri) return;
+    try {
+      const cropped = await ImageCropPicker.openCropper({
+        path: cropPreview.pendingUri,
+        mediaType: 'photo',
+        width: CARD_CROP_WIDTH,
+        height: CARD_CROP_HEIGHT,
+        cropping: true,
+        cropperToolbarTitle: 'Crop Photo',
+        includeBase64: false,
+        compressImageQuality: 0.9,
+      });
+      const idx = cropPreview.targetIndex;
+      setCropPreview({ visible: false, pendingUri: null, targetIndex: -1 });
+      const updatedPhotos = [...photos];
+      updatedPhotos[idx] = {
+        localUri: cropped.path,
+        order: idx + 1,
+        asset: { uri: cropped.path, width: cropped.width, height: cropped.height } as Asset,
+      };
+      setPhotos(updatedPhotos);
+    } catch (error: any) {
+      if (error?.code === 'E_PICKER_CANCELLED') {
+        // User cancelled cropper — keep preview open so they can still use photo
+        return;
+      }
+      console.error('Crop error:', error);
+      Toast.show({ type: 'error', text1: 'Crop failed', text2: 'Please try again', visibilityTime: 3000 });
+    }
+  };
+
+  const handleUsePhotoAsIs = () => {
+    const { pendingUri, targetIndex } = cropPreview;
+    if (!pendingUri) return;
+    setCropPreview({ visible: false, pendingUri: null, targetIndex: -1 });
+    const updatedPhotos = [...photos];
+    updatedPhotos[targetIndex] = {
+      localUri: pendingUri,
+      order: targetIndex + 1,
+      asset: { uri: pendingUri } as Asset,
+    };
+    setPhotos(updatedPhotos);
+  };
+
+  const handleCropPreviewCancel = () => {
+    setCropPreview({ visible: false, pendingUri: null, targetIndex: -1 });
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -549,6 +591,59 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
         <View style={{ height: 16 }} />
       </ScrollView>
 
+      {/* ── Crop Preview Modal ── */}
+      <Modal
+        visible={cropPreview.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCropPreviewCancel}
+      >
+        <View style={styles.cropModalOverlay}>
+          <View style={styles.cropModalCard}>
+            <Text style={styles.cropModalTitle}>Use this photo?</Text>
+            {!!cropPreview.pendingUri && (
+              <Image
+                source={{ uri: cropPreview.pendingUri }}
+                style={styles.cropPreviewImage}
+                resizeMode="cover"
+              />
+            )}
+            <Text style={styles.cropModalHint}>
+              Crop to perfectly fit the card, or use the full photo.
+            </Text>
+            <TouchableOpacity
+              style={styles.cropBtnPrimary}
+              onPress={handleCropPhoto}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={['#8B2BE2', '#06B6D4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.cropBtnGradient}
+              >
+                <Ionicons name="crop" size={18} color="#FFFFFF" />
+                <Text style={styles.cropBtnText}>Crop Photo</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cropBtnSecondary}
+              onPress={handleUsePhotoAsIs}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cropBtnSecondaryText}>Use Full Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cropBtnCancel}
+              onPress={handleCropPreviewCancel}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.cropBtnCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(32, insets.bottom + 16) }]}>
         <TouchableOpacity
@@ -613,7 +708,7 @@ const styles = StyleSheet.create({
   },
   appName: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 28,
     fontFamily: 'Inter-Bold',
     letterSpacing: 0.3,
   },
@@ -739,6 +834,83 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 17,
     fontFamily: 'Inter-SemiBold',
+  },
+  // ─── Crop preview modal ───
+  cropModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  cropModalCard: {
+    width: '100%',
+    backgroundColor: 'rgba(22,18,45,0.98)',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
+    padding: 24,
+    alignItems: 'center',
+  },
+  cropModalTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 16,
+  },
+  cropPreviewImage: {
+    width: '100%',
+    height: 240,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  cropModalHint: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.50)',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  cropBtnPrimary: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  cropBtnGradient: {
+    height: 50,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cropBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  cropBtnSecondary: {
+    width: '100%',
+    height: 50,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  cropBtnSecondaryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  cropBtnCancel: {
+    paddingVertical: 10,
+  },
+  cropBtnCancelText: {
+    color: 'rgba(255,255,255,0.40)',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
 });
 

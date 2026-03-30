@@ -181,7 +181,7 @@ const OTPVerificationScreen = ({ navigation, route }: OTPVerificationScreenProps
             'basic_info': 'ProfileSetup',
             'photos': 'PhotoUpload',
             'liveness': 'LivenessVerification',
-            'preferences': 'DatingPreferences',
+            'preferences': 'LookingFor',
             'interests': 'InterestsSelection',
             'permissions': 'Permissions',
           };

@@ -21,19 +21,11 @@ import { Platform } from 'react-native';
 /**
  * Your computer's WiFi IP address (for physical device testing)
  * Update this when you change WiFi networks
- * 
- * To find your IP:
- * - Windows: ipconfig (look for IPv4 Address)
- * - Mac/Linux: ifconfig (look for inet)
  */
-const LOCAL_WIFI_IP = '10.44.50.114';
+const LOCAL_WIFI_IP = '10.42.242.114';
 
 /**
  * Production backend URL (update when deployed)
- * Examples:
- * - Railway: https://your-app.railway.app
- * - Render: https://your-app.onrender.com
- * - Heroku: https://your-app.herokuapp.com
  */
 const PRODUCTION_API_URL = 'https://funmate-backend-production.up.railway.app';
 

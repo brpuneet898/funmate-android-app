@@ -31,6 +31,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Vibration,
 } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -39,6 +40,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FaceDetection from '@react-native-ml-kit/face-detection';
 import { API_ENDPOINTS } from '../../config/api';
 
 // API response type
@@ -63,6 +66,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('front');
   const camera = useRef<Camera>(null);
+  const isValidating = useRef(false);
 
   // Fisher-Yates shuffle for reliable randomization (prevents replay attacks)
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -86,6 +90,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(5);
   const [faceDetected, setFaceDetected] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleLogout = async () => {
     try {
@@ -107,6 +112,17 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
 
   // Animation for circle overlay
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const flashAnim = useRef(new Animated.Value(0)).current;
+
+  const triggerShutterFeedback = () => {
+    // Short haptic burst
+    Vibration.vibrate(60);
+    // White flash: quick in, slow fade out
+    Animated.sequence([
+      Animated.timing(flashAnim, { toValue: 0.75, duration: 60, useNativeDriver: true }),
+      Animated.timing(flashAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  };
 
   useEffect(() => {
     // Request camera permission on mount
@@ -136,28 +152,60 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
   }, []);
 
   /**
-   * Visual face detection indicator
-   * The actual ML verification happens in performFinalVerification
+   * Real face presence check using ML Kit
+   * Runs every 1.5 seconds for the circle border colour indicator
    */
   const detectFaceInFrame = async () => {
-    // Simple visual feedback - actual verification happens at the end
-    const isInFrame = Math.random() > 0.2; // Show green circle most of the time
-    setFaceDetected(isInFrame);
-    return { faceDetected: isInFrame };
+    if (!camera.current || !isActive || isProcessing) return;
+    try {
+      const snapshot = await (camera.current as any).takeSnapshot({ quality: 25 });
+      const imagePath: string = snapshot.path.startsWith('file://')
+        ? snapshot.path
+        : `file://${snapshot.path}`;
+      const faces = await FaceDetection.detect(imagePath, {
+        performanceMode: 'fast',
+      });
+      setFaceDetected(faces.length > 0);
+    } catch {
+      // Camera not ready yet — silently ignore, just a visual indicator
+    }
   };
 
   /**
-   * Challenge validation (visual feedback only)
-   * The actual ML face matching happens in performFinalVerification
+   * Real challenge validation using ML Kit face detection
+   * Checks head angle for turn challenges, smile probability for SMILE.
+   * Note: the FINAL security check (face vs uploaded photos) still happens
+   * in performFinalVerification via the backend — this is just anti-spoofing friction.
    */
   const validateChallenge = async (challenge: Challenge): Promise<boolean> => {
-    console.log(`🔍 Challenge: ${challenge}`);
-    
-    // Give user time to complete the action (visual feedback only)
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
-    
-    console.log(`✅ Challenge completed`);
-    return true; // Always pass - real verification happens at the end
+    if (!camera.current) return false;
+    try {
+      const snapshot = await (camera.current as any).takeSnapshot({ quality: 65 });
+      const imagePath: string = snapshot.path.startsWith('file://')
+        ? snapshot.path
+        : `file://${snapshot.path}`;
+      const faces = await FaceDetection.detect(imagePath, {
+        performanceMode: 'accurate',
+        classificationMode: 'all',
+      });
+      if (faces.length === 0) return false;
+      const face = faces[0];
+      switch (challenge) {
+        case 'CENTER':
+          return true; // Face detected = in frame
+        case 'TURN_LEFT':
+        case 'TURN_RIGHT':
+          // Use absolute angle — direction doesn't matter for liveness;
+          // user proved they moved their head in response to the challenge.
+          return Math.abs(face.rotationY) > 20;
+        case 'SMILE':
+          return ((face.smilingProbability as number) ?? 0) > 0.65;
+        default:
+          return true;
+      }
+    } catch {
+      return false;
+    }
   };
 
   /**
@@ -169,46 +217,53 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
 
     const interval = setInterval(() => {
       detectFaceInFrame();
-    }, 500); // Check face position twice per second
+    }, 1500); // Snapshot every 1.5s for face indicator
 
     return () => clearInterval(interval);
   }, [isActive, isProcessing]);
 
   /**
-   * Move to next challenge when current one completes
+   * Move to next challenge when current one completes.
+   * isValidating ref prevents double-tap without deactivating the camera.
    */
   const handleChallengeComplete = async () => {
-    // Validate current challenge with ML model
+    if (isValidating.current) return;
+    isValidating.current = true;
+
     const passed = await validateChallenge(currentChallenge);
 
     if (passed) {
-      // Mark challenge as completed
+      triggerShutterFeedback();
       setChallengesCompleted(prev => [...prev, currentChallenge]);
-
-      // Check if all challenges are done
       const completedCount = challengesCompleted.length + 1;
+
       if (completedCount >= challengeSequence.current.length) {
-        // All challenges completed - verify liveness
-        // DON'T set isProcessing here - camera needs to stay active for photo capture
+        // All challenges done — camera must stay active for final photo capture
         await performFinalVerification();
+        isValidating.current = false;
       } else {
-        // Move to next challenge
-        setIsProcessing(true); // Only set processing for UI transition
+        setIsProcessing(true);
         const nextChallenge = challengeSequence.current[completedCount];
         setCurrentChallenge(nextChallenge);
         setIsProcessing(false);
-
+        isValidating.current = false;
         Toast.show({
           type: 'success',
-          text1: 'Great!',
+          text1: 'Great! Keep going',
           text2: getInstructionText(nextChallenge),
           visibilityTime: 2000,
         });
       }
     } else {
-      // Challenge failed
-      setIsProcessing(false);
-      handleVerificationFailure();
+      // Challenge not passed — let them retry, DON'T decrement attempts
+      // (attempts are only consumed by final face-match failures)
+      isValidating.current = false;
+      Toast.show({
+        type: 'error',
+        text1: 'Try again',
+        text2: getRetryHint(currentChallenge),
+        visibilityTime: 2500,
+      });
     }
   };
 
@@ -229,6 +284,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
       const photo = await camera.current.takePhoto({
         flash: 'off',
       });
+      triggerShutterFeedback();
       
       // Now we can set processing since photo is captured
       setIsProcessing(true);
@@ -414,6 +470,19 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
   };
 
   /**
+   * Retry hint when ML Kit challenge check fails
+   */
+  const getRetryHint = (challenge: Challenge): string => {
+    switch (challenge) {
+      case 'CENTER': return 'Make sure your face is clearly visible in the circle';
+      case 'TURN_LEFT': return 'Turn your head further to the left';
+      case 'TURN_RIGHT': return 'Turn your head further to the right';
+      case 'SMILE': return 'Give a bigger smile for the camera';
+      default: return 'Please try again';
+    }
+  };
+
+  /**
    * Get icon for current challenge
    */
   const getChallengeIcon = (challenge: Challenge): string => {
@@ -443,7 +512,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
           </Text>
           <TouchableOpacity onPress={requestPermission} activeOpacity={0.8}>
             <LinearGradient
-              colors={['#378BBB', '#4FC3F7']}
+              colors={['#8B2BE2', '#06B6D4']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.permissionButton}
@@ -478,6 +547,20 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
         photo={true}
       />
 
+      {/* Animated glow ring — pulses around the face circle */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.glowRing,
+          {
+            borderColor: faceDetected
+              ? 'rgba(46,204,113,0.6)'
+              : 'rgba(139,43,226,0.45)',
+            transform: [{ scale: pulseAnim }],
+          },
+        ]}
+      />
+
       {/* Dark Overlay with Circle Cutout */}
       <View style={styles.overlay}>
         <Svg height={height} width={width}>
@@ -492,7 +575,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
             cx={width / 2}
             cy={height * 0.55}
             r={CIRCLE_SIZE / 2}
-            stroke={faceDetected ? '#2ECC71' : '#378BBB'}
+            stroke={faceDetected ? '#2ECC71' : '#8B2BE2'}
             strokeWidth={4}
             fill="none"
           />
@@ -500,24 +583,27 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
       </View>
 
       {/* Header */}
-      <View style={styles.header}>
-        {navigation.canGoBack() ? (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerRow}>
+          {navigation.canGoBack() ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={30} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.headerTitle}>Identity Verification</Text>
       </View>
 
       {/* Instruction Card */}
@@ -525,7 +611,7 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
         <Ionicons 
           name={getChallengeIcon(currentChallenge)} 
           size={40} 
-          color="#378BBB" 
+          color="#8B2BE2" 
         />
         <Text style={styles.instructionText}>
           {getInstructionText(currentChallenge)}
@@ -555,12 +641,12 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
             disabled={!faceDetected}
           >
             <LinearGradient
-              colors={faceDetected ? ['#378BBB', '#4FC3F7'] : ['#1B2F48', '#1B2F48']}
+              colors={faceDetected ? ['#8B2BE2', '#06B6D4'] : ['rgba(30,24,58,1)', 'rgba(30,24,58,1)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.captureButton}
             >
-              <Ionicons name="checkmark-circle" size={32} color={faceDetected ? "#FFFFFF" : "#7F93AA"} />
+              <Ionicons name="checkmark-circle" size={32} color={faceDetected ? "#FFFFFF" : "rgba(255,255,255,0.3)"} />
               <Text style={[styles.captureButtonText, !faceDetected && styles.captureButtonTextDisabled]}>Continue</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -581,6 +667,12 @@ const LivenessVerificationScreen: React.FC<LivenessVerificationScreenProps> = ({
           {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining
         </Text>
       </View>
+
+      {/* Shutter flash overlay */}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { opacity: flashAnim, backgroundColor: '#FFFFFF', zIndex: 99 }]}
+      />
     </View>
   );
 };
@@ -602,46 +694,71 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingHorizontal: 20,
     zIndex: 10,
+    alignItems: 'center',
+  },
+  headerRow: {
+    alignSelf: 'stretch',
+  },
+  headerTitle: {
+    color: 'rgba(255,255,255,0.7)',
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    letterSpacing: 0.6,
+    marginTop: 6,
+  },
+  glowRing: {
+    position: 'absolute',
+    top: height * 0.55 - CIRCLE_SIZE / 2 - 8,
+    left: width / 2 - CIRCLE_SIZE / 2 - 8,
+    width: CIRCLE_SIZE + 16,
+    height: CIRCLE_SIZE + 16,
+    borderRadius: (CIRCLE_SIZE + 16) / 2,
+    borderWidth: 10,
+    zIndex: 4,
   },
   backButton: {
-    width: 50,
-    height: 50,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 25,
+    backgroundColor: 'rgba(13,11,30,0.55)',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.38)',
   },
   logoutButton: {
-    width: 50,
-    height: 50,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 25,
+    backgroundColor: 'rgba(13,11,30,0.55)',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.38)',
   },
   instructionCard: {
     position: 'absolute',
-    top: 110,
+    top: 120,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(22, 40, 61, 0.8)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(13,11,30,0.86)',
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
     zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.65)',
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
-    shadowRadius: 12,
+    shadowRadius: 14,
     elevation: 150,
   },
   instructionText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginTop: 12,
+    marginTop: 10,
     textAlign: 'center',
   },
   progressContainer: {
@@ -650,19 +767,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#233B57',
+    width: 28,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   progressDotCompleted: {
     backgroundColor: '#2ECC71',
   },
   progressDotActive: {
-    backgroundColor: '#378BBB',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    backgroundColor: '#8B2BE2',
+    width: 28,
+    height: 5,
+    borderRadius: 3,
   },
   actionContainer: {
     position: 'absolute',
@@ -675,25 +792,25 @@ const styles = StyleSheet.create({
   captureButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 36,
     paddingVertical: 16,
     borderRadius: 35,
-    gap: 8,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.55)',
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 10,
   },
   captureButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontFamily: 'Inter-Bold',
   },
   captureButtonTextDisabled: {
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
   },
   processingContainer: {
     position: 'absolute',
@@ -705,9 +822,9 @@ const styles = StyleSheet.create({
   },
   processingText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     marginTop: 12,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   attemptsContainer: {
     position: 'absolute',
@@ -718,9 +835,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   attemptsText: {
-    color: '#7F93AA',
-    fontSize: 14,
-    fontWeight: '600',
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
   },
   warningContainer: {
     position: 'absolute',
@@ -743,17 +860,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    backgroundColor: '#0D0B1E',
   },
   permissionTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
     marginTop: 24,
     marginBottom: 12,
   },
   permissionText: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -765,7 +884,7 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Inter-SemiBold',
   },
   errorText: {
     color: '#FFFFFF',

@@ -13,11 +13,13 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
-  FlatList,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import CategoryIcon from '../../components/icons/CategoryIcons';
 import Toast from 'react-native-toast-message';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
@@ -185,8 +187,8 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
 
       console.log('✅ Interests skipped - empty array saved');
       
-      // Navigate to Dating Preferences screen
-      navigation.navigate('DatingPreferences' as never);
+      // Navigate to Looking For screen
+      navigation.navigate('LookingFor' as never);
 
     } catch (error: any) {
       console.error('❌ Error skipping interests:', error);
@@ -245,9 +247,9 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
         visibilityTime: 2000,
       });
 
-      // Navigate to Dating Preferences screen
+      // Navigate to Looking For screen
       setTimeout(() => {
-        navigation.navigate('DatingPreferences' as never);
+        navigation.navigate('LookingFor' as never);
       }, 1500);
 
     } catch (error: any) {
@@ -264,81 +266,64 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" translucent={true} />
+    <ImageBackground
+      source={require('../../assets/images/bg_party.webp')}
+      style={styles.bg}
+      blurRadius={3}
+    >
+      <View style={styles.overlay} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        {navigation.canGoBack() && (
+      {/* Header — Funmate logo + Skip */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerSide}>
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.logoRow}>
+          <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
+          <Text style={styles.appName}>Funmate</Text>
+        </View>
+        <View style={styles.headerSide}>
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            style={styles.skipButton}
+            onPress={handleSkip}
+            disabled={saving}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
-        )}
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Your Interests</Text>
-          <Text style={styles.subtitle}>Select 5-15 interests to help us find your match</Text>
         </View>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={handleSkip}
-          disabled={saving}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Selected Count */}
-      <View style={styles.countContainer}>
-        <Text style={styles.countText}>
-          {selectedInterests.length} / 15 selected
-        </Text>
+      {/* Count badge — floats below header */}
+      <View style={styles.countRow}>
+        <Text style={styles.countText}>{selectedInterests.length} / 15 selected</Text>
         <Text style={[
           styles.minText,
-          selectedInterests.length >= 5 && styles.minTextSuccess
+          selectedInterests.length >= 5 && styles.minTextSuccess,
         ]}>
-          {selectedInterests.length >= 5 ? '✓ Minimum met' : `Minimum: 5`}
+          {selectedInterests.length >= 5 ? '✓ Minimum met' : 'Minimum: 5'}
         </Text>
       </View>
 
-      {/* Selected Interests Chips */}
-      {selectedInterests.length > 0 && (
-        <View style={styles.selectedContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.selectedChipsContainer}
-          >
-            {selectedInterests.map((interest) => (
-              <TouchableOpacity
-                key={interest}
-                onPress={() => handleToggleInterest(interest)}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={['#378BBB', '#4FC3F7']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.selectedChip}
-                >
-                  <Text style={styles.selectedChipText}>{interest}</Text>
-                  <Ionicons name="close-circle" size={18} color="#FFFFFF" />
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      {/* Main scroll */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
-      {/* Categories Grid */}
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
+        {/* Page title inside scroll */}
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>Your Interests</Text>
+          <Text style={styles.subtitle}>Pick 5–15 interests to help us find your match</Text>
+        </View>
+
+        {/* Category icon row */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -348,7 +333,6 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
           {INTEREST_CATEGORIES.map((category) => {
             const selectedCount = category.tags.filter(tag => selectedInterests.includes(tag)).length;
             const isExpanded = expandedCategory === category.id;
-            
             return (
               <View key={category.id} style={styles.categoryWrapper}>
                 <TouchableOpacity
@@ -356,25 +340,54 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
                   onPress={() => setExpandedCategory(isExpanded ? null : category.id)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name={category.icon as any} size={32} color={isExpanded ? "#FFFFFF" : "#378BBB"} />
+                  <CategoryIcon categoryId={category.id} size={76} />
                   {selectedCount > 0 && (
                     <View style={styles.iconBadge}>
                       <Text style={styles.iconBadgeText}>{selectedCount}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
+                <Text style={styles.categoryLabel} numberOfLines={1}>{category.name.split(' ')[0]}</Text>
               </View>
             );
           })}
         </ScrollView>
 
-        {/* Expanded Category Content */}
+        {/* Selected chips — shown between category icons and expanded tags */}
+        {selectedInterests.length > 0 && (
+          <View style={styles.selectedContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectedChipsContainer}
+            >
+              {selectedInterests.map((interest) => (
+                <TouchableOpacity
+                  key={interest}
+                  onPress={() => handleToggleInterest(interest)}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient
+                    colors={['#8B2BE2', '#06B6D4']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.selectedChip}
+                  >
+                    <Text style={styles.selectedChipText}>{interest}</Text>
+                    <Ionicons name="close-circle" size={16} color="#FFFFFF" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Expanded category tags */}
         {expandedCategory && (
           <View style={styles.expandedSection}>
             {(() => {
               const category = INTEREST_CATEGORIES.find(c => c.id === expandedCategory);
               if (!category) return null;
-              
               return (
                 <>
                   <View style={styles.expandedHeader}>
@@ -384,10 +397,9 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
                       activeOpacity={0.7}
                       style={styles.closeButton}
                     >
-                      <Ionicons name="close" size={24} color="#7F93AA" />
+                      <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
                     </TouchableOpacity>
                   </View>
-                  
                   <View style={styles.tagsContainer}>
                     {category.tags.map((tag) => {
                       const isSelected = selectedInterests.includes(tag);
@@ -399,16 +411,16 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
                         >
                           {isSelected ? (
                             <LinearGradient
-                              colors={['#378BBB', '#4FC3F7']}
+                              colors={['#8B2BE2', '#06B6D4']}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 1, y: 0 }}
                               style={styles.tag}
                             >
                               <Text style={styles.tagTextSelected}>{tag}</Text>
-                              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
                             </LinearGradient>
                           ) : (
-                            <View style={styles.tag}>
+                            <View style={styles.tagUnselected}>
                               <Text style={styles.tagText}>{tag}</Text>
                             </View>
                           )}
@@ -425,39 +437,47 @@ const InterestsSelectionScreen: React.FC<InterestsSelectionScreenProps> = ({ nav
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Continue Button */}
-      <View style={[styles.footer, { paddingBottom: Math.max(32, insets.bottom + 16) }]}>
+      {/* Continue button — no footer band */}
+      <View style={[styles.footer, { paddingBottom: Math.max(24, insets.bottom + 12) }]}>
         <TouchableOpacity
           onPress={handleContinue}
           disabled={saving}
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={selectedInterests.length >= 5 ? ['#378BBB', '#4FC3F7'] : ['#1B2F48', '#1B2F48']}
+            colors={selectedInterests.length >= 5 ? ['#8B2BE2', '#06B6D4'] : ['rgba(30,24,58,0.9)', 'rgba(30,24,58,0.9)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.continueButton}
           >
             <Text style={[styles.continueButtonText, selectedInterests.length < 5 && styles.continueButtonTextDisabled]}>
-              {saving ? 'Saving...' : `Continue ${selectedInterests.length > 0 ? `(${selectedInterests.length})` : ''}`}
+              {saving ? 'Saving...' : `Continue${selectedInterests.length > 0 ? ` (${selectedInterests.length})` : ''}`}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  bg: {
     flex: 1,
-    backgroundColor: '#0E1621',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13,11,30,0.72)',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    zIndex: 10,
+  },
+  headerSide: {
+    width: 60,
     alignItems: 'flex-start',
   },
   backButton: {
@@ -465,60 +485,55 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
-  headerContent: {
-    flex: 1,
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  appName: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: 0.3,
   },
   skipButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingVertical: 8,
-    marginLeft: 8,
   },
   skipButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#378BBB',
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+    color: '#22D3EE',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#B8C7D9',
-    lineHeight: 20,
-  },
-  countContainer: {
+  countRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#16283D',
-    borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
+    paddingVertical: 8,
+    marginTop: 14,
   },
   countText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#378BBB',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#A855F7',
   },
   minText: {
-    fontSize: 14,
-    color: '#7F93AA',
-    fontWeight: '500',
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255,255,255,0.45)',
   },
   minTextSuccess: {
     color: '#2ECC71',
   },
   selectedContainer: {
-    backgroundColor: '#16283D',
-    borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   selectedChipsContainer: {
     paddingHorizontal: 20,
@@ -528,204 +543,169 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 20,
     gap: 6,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 6,
   },
   selectedChipText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
   scrollView: {
     flex: 1,
   },
+  titleBlock: {
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 6,
+  },
+  title: {
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: 20,
+  },
   categoriesScroll: {
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   categoriesScrollContent: {
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 12,
   },
   categoryWrapper: {
     width: 100,
-    height: 100,
+    alignItems: 'center',
+    gap: 6,
   },
   categoryIconButton: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#16283D',
-    borderRadius: 16,
+    width: 100,
+    height: 110,
+    backgroundColor: 'rgba(26,21,48,0.88)',
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
-    position: 'relative',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.35)',
+    overflow: 'hidden',
   },
   categoryIconButtonActive: {
-    backgroundColor: '#378BBB',
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 8,
+    borderColor: '#A855F7',
+    borderWidth: 2.5,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    elevation: 12,
+  },
+  categoryLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
   },
   iconBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF4D6D',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: 6,
+    right: 6,
+    backgroundColor: '#06B6D4',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
   },
   expandedSection: {
-    backgroundColor: '#16283D',
+    backgroundColor: 'rgba(13,11,30,0.9)',
     marginHorizontal: 16,
     marginBottom: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.45)',
   },
   expandedHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   expandedTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  categoryContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#16283D',
-  },
-  categoryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  categoryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    flex: 1,
-  },
-  categoryBadge: {
-    backgroundColor: '#378BBB',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-    backgroundColor: '#0E1621',
+    gap: 8,
   },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    gap: 6,
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 4,
+    gap: 5,
+  },
+  tagUnselected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
+    gap: 5,
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
-    fontWeight: '500',
   },
   tagTextSelected: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    fontWeight: '600',
   },
   bottomSpacer: {
     height: 20,
   },
   footer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    backgroundColor: '#16283D',
-    borderTopWidth: 1,
-    borderTopColor: '#233B57',
+    paddingTop: 12,
   },
   continueButton: {
-    paddingVertical: 16,
+    height: 54,
     borderRadius: 30,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 6,
+    justifyContent: 'center',
   },
   continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
   },
   continueButtonTextDisabled: {
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
   },
 });
 

@@ -25,7 +25,10 @@ import PhotoUploadScreen from '../screens/auth/PhotoUploadScreen';
 import IdentityVerificationIntroScreen from '../screens/auth/IdentityVerificationIntroScreen';
 import LivenessVerificationScreen from '../screens/auth/LivenessVerificationScreen';
 import InterestsSelectionScreen from '../screens/auth/InterestsSelectionScreen';
-import DatingPreferencesScreen from '../screens/auth/DatingPreferencesScreen';
+import LookingForScreen from '../screens/auth/LookingForScreen';
+import InterestedInScreen from '../screens/auth/InterestedInScreen';
+import MatchRadiusScreen from '../screens/auth/MatchRadiusScreen';
+import AboutMeScreen from '../screens/auth/AboutMeScreen';
 import CreatorEmailVerificationScreen from '../screens/auth/CreatorEmailVerificationScreen';
 import CreatorTypeSelectionScreen from '../screens/auth/CreatorTypeSelectionScreen';
 import IndividualVerificationScreen from '../screens/auth/IndividualVerificationScreen';
@@ -103,7 +106,10 @@ export type RootStackParamList = {
   IdentityVerification: undefined;
   LivenessVerification: undefined;
   InterestsSelection: undefined;
-  DatingPreferences: undefined;
+  LookingFor: undefined;
+  InterestedIn: { relationshipIntent: string | null };
+  MatchRadius: { relationshipIntent: string | null; interestedIn: string[] };
+  AboutMe: { relationshipIntent: string | null; interestedIn: string[]; matchRadiusKm: number };
   LikesSwiper: { clickedUserId: string };
   Chat: {
     chatId: string | null;
@@ -222,7 +228,7 @@ const getScreenForSignupStep = (signupStep: SignupStep): keyof RootStackParamLis
     case 'liveness':
       return 'IdentityVerification'; // Route to intro screen, not camera
     case 'preferences':
-      return 'DatingPreferences';
+      return 'LookingFor';
     case 'interests':
       return 'InterestsSelection';
     case 'complete':
@@ -355,7 +361,10 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>, {}>(
         <Stack.Screen name="IdentityVerification" component={IdentityVerificationIntroScreen} />
         <Stack.Screen name="LivenessVerification" component={LivenessVerificationScreen} />
         <Stack.Screen name="InterestsSelection" component={InterestsSelectionScreen} />
-        <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} />
+        <Stack.Screen name="LookingFor" component={LookingForScreen} />
+        <Stack.Screen name="InterestedIn" component={InterestedInScreen} />
+        <Stack.Screen name="MatchRadius" component={MatchRadiusScreen} />
+        <Stack.Screen name="AboutMe" component={AboutMeScreen} />
         <Stack.Screen name="LikesSwiper" component={LikesSwiperScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen 
