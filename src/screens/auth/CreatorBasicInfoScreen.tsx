@@ -31,6 +31,10 @@ import {
   ActivityIndicator,
   StatusBar,
   Modal,
+  ImageBackground,
+  Image,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -344,41 +348,64 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" translucent={true} />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.bg}
+      blurRadius={6}
+    >
+      <View style={styles.overlay} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <KeyboardAwareScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        extraScrollHeight={100}
-        extraHeight={150}
-        enableAutomaticScroll={true}
-        keyboardOpeningTime={0}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        {navigation.canGoBack() ? (
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => setShowLogoutAlert(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={26} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <View style={styles.logoRow}>
+          <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
+          <Text style={styles.appName}>Funmate</Text>
+        </View>
+        <View style={styles.headerBtn} />
+      </View>
+
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+          setFocusedInput(null);
+        }}
       >
+        <View style={{ flex: 1 }}>
+          <KeyboardAwareScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            extraScrollHeight={100}
+            extraHeight={150}
+            enableAutomaticScroll={true}
+            keyboardOpeningTime={0}
+          >
         {/* Header */}
-        <View style={styles.header}>
-          {navigation.canGoBack() ? (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setShowLogoutAlert(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="log-out-outline" size={26} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
-          <Text style={styles.title}>Complete Your Profile</Text>
-          <Text style={styles.subtitle}>Let's get to know you better</Text>
+        {/* Page title */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
+            Complete Your Profile
+          </Text>
+          <Text style={styles.subtitle}>Enter your basic details</Text>
         </View>
 
         {/* Form Fields */}
@@ -388,7 +415,7 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
             value={fullName}
             onChangeText={setFullName}
             placeholder="Full Name"
-            placeholderTextColor="#7F93AA"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             autoCapitalize="words"
             editable={!loading}
             onFocus={() => setFocusedInput('fullName')}
@@ -400,7 +427,7 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
             value={email}
             onChangeText={setEmail}
             placeholder="Email Address"
-            placeholderTextColor="#7F93AA"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!loading}
@@ -414,7 +441,7 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
               value={username}
               onChangeText={setUsername}
               placeholder="Username"
-              placeholderTextColor="#7F93AA"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="none"
               editable={!loading}
               onFocus={() => setFocusedInput('username')}
@@ -439,7 +466,7 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
               value={password}
               onChangeText={setPassword}
               placeholder="Password"
-              placeholderTextColor="#7F93AA"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               editable={!loading}
@@ -484,7 +511,7 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Confirm Password"
-              placeholderTextColor="#7F93AA"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               secureTextEntry={!showConfirmPassword}
               autoCapitalize="none"
               editable={!loading}
@@ -504,15 +531,42 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
           </View>
         </View>
 
+        {/* Continue Button */}
+        <TouchableOpacity
+          onPress={handleEmailSignup}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#8B2BE2', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.continueButton}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.continueButtonText}>Continue</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* OR divider */}
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <Text style={styles.orText}>OR</Text>
+          <View style={styles.orLine} />
+        </View>
+
         {/* Continue with Google Button */}
         <TouchableOpacity
-          style={styles.googleButton}
+          style={[styles.googleButton, { marginBottom: Math.max(32, insets.bottom + 16) }]}
           onPress={handleGoogleSignIn}
           disabled={loading}
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator color="#378BBB" />
+            <ActivityIndicator color="#1C1C1E" />
           ) : (
             <>
               <Svg width="18" height="18" viewBox="0 0 48 48" style={{ marginRight: 12 }}>
@@ -526,27 +580,9 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
             </>
           )}
         </TouchableOpacity>
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          onPress={handleEmailSignup}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={['#378BBB', '#4FC3F7']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.continueButton, { marginBottom: Math.max(32, insets.bottom + 16) }]}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.continueButtonText}>Continue</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
       </KeyboardAwareScrollView>
+      </View>
+    </TouchableWithoutFeedback>
 
       {/* Logout Confirmation Modal */}
       <Modal
@@ -587,7 +623,8 @@ const CreatorBasicInfoScreen: React.FC<CreatorBasicInfoScreenProps> = ({ navigat
           </View>
         </View>
       </Modal>
-    </View>
+    {/* </View> */}
+      </ImageBackground>
   );
 };
 
@@ -596,17 +633,54 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0E1621',
   },
+  bg: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13,11,30,0.62)',
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  headerBtn: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  appName: {
+    color: '#FFFFFF',
+    fontSize: 30,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: 0.3,
+  },
+  pageHeader: {
     paddingHorizontal: 32,
-    paddingTop: 40,
-    paddingBottom: 32,
+    paddingTop: 28,
+    paddingBottom: 24,
   },
   backButton: {
     width: 40,
@@ -616,39 +690,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
-    fontFamily: 'Inter_24pt-Bold',
+    lineHeight: 34,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#B8C7D9',
-    fontFamily: 'Inter_24pt-Regular',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.50)',
+    fontFamily: 'Inter-Regular',
   },
   form: {
     paddingHorizontal: 32,
-    gap: 16,
+    gap: 14,
   },
   input: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45,43,58,0.85)',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
     color: '#FFFFFF',
     height: 56,
     justifyContent: 'center',
-    fontFamily: 'Inter_24pt-Regular',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    fontFamily: 'Inter-Regular',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   inputFocused: {
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
+    borderColor: 'rgba(139,92,246,0.60)',
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -664,31 +738,29 @@ const styles = StyleSheet.create({
   },
   availableText: {
     color: '#2ECC71',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
   unavailableText: {
     color: '#FF4D6D',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
   passwordContainer: {
     position: 'relative',
   },
   passwordInput: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45,43,58,0.85)',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
     paddingRight: 50,
     fontSize: 16,
     color: '#FFFFFF',
     height: 56,
-    fontFamily: 'Inter_24pt-Regular',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    fontFamily: 'Inter-Regular',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   eyeIcon: {
     position: 'absolute',
@@ -701,12 +773,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 8,
+    marginTop: 6,
   },
   strengthBarBackground: {
     flex: 1,
     height: 4,
-    backgroundColor: '#233B57',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -716,77 +788,91 @@ const styles = StyleSheet.create({
   },
   strengthLabel: {
     fontSize: 12,
-    fontWeight: '600',
     minWidth: 50,
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   googleButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     marginHorizontal: 32,
     marginTop: 24,
-    borderWidth: 2,
-    borderColor: '#378BBB',
   },
   googleButtonText: {
-    color: '#FFFFFF',
+    color: '#1C1C1E',
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   continueButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 32,
-    marginTop: 16,
-    shadowColor: '#378BBB',
+    marginTop: 14,
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
+  },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 32,
+    marginTop: 20,
+    marginBottom: 16,
+    gap: 12,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  orText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 2,
   },
   alertOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0,0,0,0.80)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
   },
   alertBox: {
-    backgroundColor: '#16283D',
+    backgroundColor: 'rgba(30,28,45,0.96)',
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 340,
-    borderWidth: 1,
-    borderColor: '#233B57',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   alertTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
-    fontFamily: 'Inter_24pt-Bold',
   },
   alertMessage: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.60)',
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
-    fontFamily: 'Inter_24pt-Regular',
+    fontFamily: 'Inter-Regular',
   },
   alertButtons: {
     flexDirection: 'row',
@@ -795,30 +881,28 @@ const styles = StyleSheet.create({
   alertCancelButton: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#233B57',
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
   alertCancelText: {
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.65)',
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   alertLogoutButton: {
     flex: 1,
     backgroundColor: '#FF4D6D',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
   },
   alertLogoutText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 });
 
