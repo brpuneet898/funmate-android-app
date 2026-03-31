@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  ImageBackground,
   Modal,
   Pressable,
   RefreshControl,
@@ -30,6 +31,7 @@ import firestore, {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
+import LinearGradient from 'react-native-linear-gradient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -180,7 +182,7 @@ const EventCard = React.memo(({ event, onPress }: { event: EventDoc; onPress: ()
                   cardStyles.capacityBarFill,
                   {
                     width: `${Math.min(100, (event.capacity.booked / event.capacity.total) * 100)}%` as any,
-                    backgroundColor: isFull ? '#FF5252' : '#378BBB',
+                    backgroundColor: isFull ? '#FF5252' : '#8B2BE2',
                   },
                 ]}
               />
@@ -197,12 +199,12 @@ const EventCard = React.memo(({ event, onPress }: { event: EventDoc; onPress: ()
 
 const cardStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#16283D',
-    borderRadius: 16,
+    backgroundColor: '#1A1530',
+    borderRadius: 20,
     marginBottom: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   imageWrap: {
     height: 180,
@@ -222,24 +224,24 @@ const cardStyles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: 'rgba(14,22,33,0.85)',
+    backgroundColor: 'rgba(13,11,30,0.78)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.4)',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   priceChipFree: {
-    borderColor: 'rgba(52,199,89,0.5)',
-    backgroundColor: 'rgba(14,22,33,0.85)',
+    borderColor: 'rgba(139,92,246,0.25)',
+    backgroundColor: 'rgba(13,11,30,0.78)',
   },
   priceChipText: {
     fontSize: 13,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#FFFFFF',
   },
   priceChipTextFree: {
-    color: '#34C759',
+    color: '#FFFFFF',
   },
   soldOutOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -258,18 +260,18 @@ const cardStyles = StyleSheet.create({
   },
   categoryChip: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(55,139,187,0.12)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 5,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.25)',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   categoryChipText: {
     fontSize: 11,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -289,7 +291,7 @@ const cardStyles = StyleSheet.create({
   metaText: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     flex: 1,
   },
   capacityRow: {
@@ -312,7 +314,7 @@ const cardStyles = StyleSheet.create({
   capacityLabel: {
     fontSize: 11,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     minWidth: 64,
     textAlign: 'right',
   },
@@ -336,21 +338,21 @@ const chipStyles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.25)',
-    backgroundColor: '#1A2F47',
+    borderColor: 'rgba(139,92,246,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     marginRight: 8,
     marginBottom: 8,
   },
   chipActive: {
-    backgroundColor: '#378BBB',
-    borderColor: '#378BBB',
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B2BE2',
   },
   text: {
     fontSize: 13,
     fontFamily: 'Inter-Medium',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
   },
   textActive: {
     color: '#FFFFFF',
@@ -519,36 +521,41 @@ const EventHubScreen = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Events</Text>
         <Text style={styles.headerSubtitle}>Discover what's happening near you</Text>
 
         {/* Search bar + Filter button row */}
         <View style={styles.searchRow}>
           <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={18} color="#506A85" />
+            <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.55)" />
             <TextInput
               style={styles.searchInput}
               value={search}
               onChangeText={setSearch}
               placeholder="Search events..."
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               returnKeyType="search"
             />
             {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close-circle" size={17} color="#506A85" />
+                <Ionicons name="close-circle" size={17} color="rgba(255,255,255,0.55)" />
               </TouchableOpacity>
             )}
           </View>
 
           {/* Filter icon button */}
           <TouchableOpacity style={styles.filterBtn} onPress={openModal} activeOpacity={0.8}>
-            <Ionicons name="options-outline" size={20} color={activeFilterCount > 0 ? '#FFFFFF' : '#B8C7D9'} />
+            <Ionicons name="options-outline" size={20} color={activeFilterCount > 0 ? '#FFFFFF' : 'rgba(255,255,255,0.55)'} />
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -569,7 +576,7 @@ const EventHubScreen = () => {
           {category !== 'All' && (
             <TouchableOpacity style={styles.activePill} onPress={() => setCategory('All')}>
               <Text style={styles.activePillText}>{category}</Text>
-              <Ionicons name="close" size={10} color="#378BBB" />
+              <Ionicons name="close" size={10} color="#22D3EE" />
             </TouchableOpacity>
           )}
           {price !== 'Any' && (
@@ -577,13 +584,13 @@ const EventHubScreen = () => {
               <Text style={styles.activePillText}>
                 {price === 'Paid' ? `Paid · max ₹${Math.round(priceMax)}` : 'Free'}
               </Text>
-              <Ionicons name="close" size={10} color="#378BBB" />
+              <Ionicons name="close" size={10} color="#22D3EE" />
             </TouchableOpacity>
           )}
           {dateF !== 'Any' && (
             <TouchableOpacity style={styles.activePill} onPress={() => setDateF('Any')}>
               <Text style={styles.activePillText}>{dateF}</Text>
-              <Ionicons name="close" size={10} color="#378BBB" />
+              <Ionicons name="close" size={10} color="#22D3EE" />
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -593,7 +600,7 @@ const EventHubScreen = () => {
       {/* ── List ── */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#378BBB" />
+          <ActivityIndicator size="large" color="#8B2BE2" />
         </View>
       ) : (
         <FlatList
@@ -608,15 +615,15 @@ const EventHubScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#378BBB"
-              colors={['#378BBB']}
+              tintColor="#8B2BE2"
+              colors={['#8B2BE2']}
             />
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={52} color="#3A5068" />
+              <Ionicons name="calendar-outline" size={52} color="rgba(255,255,255,0.35)" />
               <Text style={styles.emptyTitle}>No events found</Text>
               <Text style={styles.emptySubtitle}>
                 {search || activeFilterCount > 0
@@ -628,7 +635,7 @@ const EventHubScreen = () => {
           ListFooterComponent={
             loadingMore ? (
               <View style={styles.loadMoreSpinner}>
-                <ActivityIndicator size="small" color="#378BBB" />
+                <ActivityIndicator size="small" color="#8B2BE2" />
               </View>
             ) : null
           }
@@ -662,7 +669,7 @@ const EventHubScreen = () => {
               <Text style={modal.resetText}>Reset all</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={modal.closeBtn}>
-              <Ionicons name="close" size={20} color="#B8C7D9" />
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.75)" />
             </TouchableOpacity>
           </View>
 
@@ -709,9 +716,9 @@ const EventHubScreen = () => {
                   value={draftPriceMax}
                   onValueChange={setDraftPriceMax}
                   step={Math.max(1, Math.floor(maxEventPrice / 100))}
-                  minimumTrackTintColor="#378BBB"
-                  maximumTrackTintColor="rgba(55,139,187,0.2)"
-                  thumbTintColor="#378BBB"
+                  minimumTrackTintColor="#8B2BE2"
+                  maximumTrackTintColor="rgba(255,255,255,0.12)"
+                  thumbTintColor="#06B6D4"
                 />
               </View>
             )}
@@ -736,12 +743,20 @@ const EventHubScreen = () => {
           </ScrollView>
 
           {/* Apply button */}
-          <TouchableOpacity style={modal.applyBtn} onPress={applyFilters} activeOpacity={0.85}>
-            <Text style={modal.applyText}>Apply Filters</Text>
+          <TouchableOpacity onPress={applyFilters} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#8B2BE2', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={modal.applyBtn}
+            >
+              <Text style={modal.applyText}>Apply Filters</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </Modal>
     </View>
+    </ImageBackground>
   );
 };
 
@@ -750,23 +765,27 @@ const EventHubScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 14,
-    backgroundColor: '#0E1621',
+    backgroundColor: 'transparent',
   },
   headerTitle: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 14,
   },
   searchRow: {
@@ -779,27 +798,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#16283D',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     padding: 0,
   },
   filterBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: '#16283D',
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
+    width: 54,
+    height: 54,
+    borderRadius: 14,
+    backgroundColor: '#16112B',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -810,7 +829,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#378BBB',
+    backgroundColor: '#8B2BE2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -833,19 +852,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(55,139,187,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.28)',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    height: 22,
-    marginRight: 6,
+    borderColor: 'rgba(139,92,246,0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    height: 24,
+    marginRight: 8,
   },
   activePillText: {
     fontSize: 11,
     lineHeight: 22,
     fontFamily: 'Inter-Medium',
-    color: '#378BBB',
+    color: '#22D3EE',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -867,11 +886,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
-    lineHeight: 21,
+    lineHeight: 22,
   },
   loadMoreSpinner: {
     paddingVertical: 20,
@@ -882,23 +901,23 @@ const styles = StyleSheet.create({
 const modal = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(13,11,30,0.60)',
   },
   sheet: {
-    backgroundColor: '#111E2D',
+    backgroundColor: '#1A1530',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '85%',
     borderTopWidth: 1,
-    borderColor: 'rgba(55,139,187,0.15)',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   handle: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -916,7 +935,7 @@ const modal = StyleSheet.create({
   resetText: {
     fontSize: 13,
     fontFamily: 'Inter-Medium',
-    color: '#506A85',
+    color: '#22D3EE',
     marginRight: 16,
   },
   closeBtn: {
@@ -933,7 +952,7 @@ const modal = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
@@ -952,11 +971,11 @@ const modal = StyleSheet.create({
   sliderSection: {
     marginTop: 8,
     marginBottom: 16,
-    backgroundColor: 'rgba(55,139,187,0.06)',
-    borderRadius: 12,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
   },
   sliderLabels: {
     flexDirection: 'row',
@@ -967,12 +986,12 @@ const modal = StyleSheet.create({
   sliderLabel: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
   },
   sliderValue: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#22D3EE',
   },
   slider: {
     width: '100%',
@@ -981,19 +1000,19 @@ const modal = StyleSheet.create({
   sliderNone: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 16,
     marginTop: 4,
   },
   applyBtn: {
-    backgroundColor: '#378BBB',
-    borderRadius: 14,
-    paddingVertical: 15,
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
   },
   applyText: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
