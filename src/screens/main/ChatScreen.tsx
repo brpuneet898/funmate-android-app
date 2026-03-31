@@ -33,10 +33,12 @@ import {
   Modal,
   Pressable,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
 import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import auth from '@react-native-firebase/auth';
@@ -839,7 +841,7 @@ const ChatScreen = () => {
                     style={styles.reactionOptionMore}
                     onPress={() => setShowExtendedEmojis(true)}
                   >
-                    <Ionicons name="add" size={24} color="#B8C7D9" />
+                    <Ionicons name="add" size={24} color="rgba(255,255,255,0.82)" />
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
@@ -855,7 +857,7 @@ const ChatScreen = () => {
                       onPress={() => setShowExtendedEmojis(false)}
                       style={styles.extendedEmojiClose}
                     >
-                      <Ionicons name="close" size={24} color="#B8C7D9" />
+                      <Ionicons name="close" size={24} color="rgba(255,255,255,0.82)" />
                     </TouchableOpacity>
                   </View>
                   <View style={styles.extendedEmojiGrid}>
@@ -889,193 +891,228 @@ const ChatScreen = () => {
   // Loading state
   if (loading) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#378BBB" />
-          <Text style={styles.loadingText}>Loading chat...</Text>
+      <ImageBackground
+        source={require('../../assets/images/bg_party.webp')}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#8B2BE2" />
+            <Text style={styles.loadingText}>Loading chat...</Text>
+          </View>
         </View>
-      </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.headerProfile}>
-          <Image source={{ uri: displayPhoto }} style={styles.headerAvatar} />
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerName} numberOfLines={1}>
-              {displayName}
-            </Text>
-            {!isMutual && (
-              <Text style={styles.restrictedBadge}>Restricted Chat</Text>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.headerAction}
-          onPress={openBlockReportModal}
-        >
-          <Ionicons name="ellipsis-vertical" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Restricted Chat Notice */}
-      {!isMutual && !hasBlockedRecipient && (
-        <View style={styles.restrictedNotice}>
-          <Ionicons name="lock-closed" size={16} color="#F4B400" />
-          <Text style={styles.restrictedNoticeText}>
-            This is a restricted chat. Send a quick message to break the ice!
-          </Text>
-        </View>
-      )}
-
-      {/* Blocked User Notice */}
-      {hasBlockedRecipient && (
-        <View style={styles.blockedNotice}>
-          <Ionicons name="ban" size={16} color="#FF4D6D" />
-          <Text style={styles.blockedNoticeText}>
-            You've blocked this user. Unblock to send messages.
-          </Text>
-          <TouchableOpacity 
-            onPress={() => {
-              showConfirm(
-                'Unblock User',
-                `Are you sure you want to unblock ${recipient?.name || recipientName || 'this user'}?`,
-                async () => {
-                  try {
-                    await handleUnblock();
-                    showSuccess('Unblocked', `${recipient?.name || recipientName || 'User'} has been unblocked.`);
-                  } catch (error) {
-                    showError('Error', 'Failed to unblock user. Please try again.');
-                  }
-                },
-                { confirmText: 'Unblock', icon: 'person-remove' }
-              );
-            }} 
-            style={styles.unblockButton}
-          >
-            <Text style={styles.unblockButtonText}>Unblock</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Messages List */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        inverted
-        style={styles.messageListContainer}
-        contentContainerStyle={styles.messagesList}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          <View style={styles.emptyMessages}>
-            <Ionicons name="chatbubbles-outline" size={60} color="#7F93AA" />
-            <Text style={styles.emptyMessagesText}>
-              {isMutual
-                ? 'Start the conversation!'
-                : 'Send a quick message to connect!'}
-            </Text>
-          </View>
-        }
-      />
-
-      {/* Input Area */}
-      {!hasBlockedRecipient && isMutual ? (
-        // Full text input for mutual chats with photo button
-        <View style={[styles.inputContainer, { 
-          marginBottom: keyboardHeight, 
-          paddingBottom: keyboardHeight > 0 ? 12 : 12 + insets.bottom 
-        }]}>
-          {/* Photo picker button */}
-          <TouchableOpacity
-            style={styles.photoButton}
-            onPress={handlePickPhoto}
-            disabled={uploadingPhoto}
-          >
-            {uploadingPhoto ? (
-              <ActivityIndicator size="small" color="#378BBB" />
-            ) : (
-              <Ionicons name="image-outline" size={24} color="#378BBB" />
-            )}
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
           </TouchableOpacity>
 
-          <TextInput
-            style={styles.textInput}
-            placeholder="Type a message..."
-            placeholderTextColor="#7F93AA"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={1000}
-          />
+          <TouchableOpacity style={styles.headerProfile}>
+            <Image source={{ uri: displayPhoto }} style={styles.headerAvatar} />
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerName} numberOfLines={1}>
+                {displayName}
+              </Text>
+              {!isMutual && (
+                <Text style={styles.restrictedBadge}>Restricted Chat</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+
           <TouchableOpacity
+            style={styles.headerAction}
+            onPress={openBlockReportModal}
+          >
+            <Ionicons name="ellipsis-vertical" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Restricted Chat Notice */}
+        {!isMutual && !hasBlockedRecipient && (
+          <View style={styles.restrictedNotice}>
+            <Ionicons name="lock-closed" size={16} color="#A855F7" />
+            <Text style={styles.restrictedNoticeText}>
+              This is a restricted chat. Send a quick message to break the ice!
+            </Text>
+          </View>
+        )}
+
+        {/* Blocked User Notice */}
+        {hasBlockedRecipient && (
+          <View style={styles.blockedNotice}>
+            <Ionicons name="ban" size={16} color="#FF4D6D" />
+            <Text style={styles.blockedNoticeText}>
+              You've blocked this user. Unblock to send messages.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                showConfirm(
+                  'Unblock User',
+                  `Are you sure you want to unblock ${recipient?.name || recipientName || 'this user'}?`,
+                  async () => {
+                    try {
+                      await handleUnblock();
+                      showSuccess('Unblocked', `${recipient?.name || recipientName || 'User'} has been unblocked.`);
+                    } catch (error) {
+                      showError('Error', 'Failed to unblock user. Please try again.');
+                    }
+                  },
+                  { confirmText: 'Unblock', icon: 'person-remove' }
+                );
+              }}
+              style={styles.unblockButton}
+            >
+              <Text style={styles.unblockButtonText}>Unblock</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Messages List */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          inverted
+          style={styles.messageListContainer}
+          contentContainerStyle={styles.messagesList}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <View style={styles.emptyMessages}>
+              <Ionicons name="chatbubbles-outline" size={60} color="rgba(255,255,255,0.55)" />
+              <Text style={styles.emptyMessagesText}>
+                {isMutual
+                  ? 'Start the conversation!'
+                  : 'Send a quick message to connect!'}
+              </Text>
+            </View>
+          }
+        />
+
+        {/* Input Area */}
+        {!hasBlockedRecipient && isMutual ? (
+          <View
             style={[
-              styles.sendButton,
-              (!inputText.trim() || sending) && styles.sendButtonDisabled,
+              styles.inputContainer,
+              {
+                marginBottom: keyboardHeight,
+                paddingBottom: keyboardHeight > 0 ? 12 : Math.max(12, insets.bottom + 8),
+              },
             ]}
-            onPress={sendTextMessage}
-            disabled={!inputText.trim() || sending}
           >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Ionicons name="send" size={20} color="#FFFFFF" />
-            )}
-          </TouchableOpacity>
-        </View>
-      ) : !hasBlockedRecipient && !isMutual ? (
-        // Shadow chips for restricted chats (only if not blocked)
-        <View style={[styles.shadowChipsContainer, { 
-          marginBottom: keyboardHeight, 
-          paddingBottom: keyboardHeight > 0 ? 16 : 16 + insets.bottom 
-        }]}>
-          <Text style={styles.shadowChipsLabel}>Quick Messages</Text>
-          <FlatList
-            data={SHADOW_CHIPS}
-            renderItem={renderShadowChip}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.shadowChipsList}
-          />
-        </View>
-      ) : null}
+            <TouchableOpacity
+              style={styles.photoButton}
+              onPress={handlePickPhoto}
+              disabled={uploadingPhoto}
+            >
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color="#8B2BE2" />
+              ) : (
+                <Ionicons name="image-outline" size={22} color="#8B2BE2" />
+              )}
+            </TouchableOpacity>
 
-      {/* Reaction Picker Modal */}
-      {renderReactionPicker()}
+            <TextInput
+              style={styles.textInput}
+              placeholder="Type a message..."
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={1000}
+            />
 
-      {/* Block & Report Modal */}
-      <BlockReportModal
-        visible={showBlockReportModal}
-        onClose={closeBlockReportModal}
-        userId={recipientId}
-        userName={recipient?.name || displayName}
-        isBlocked={isBlocked}
-        onBlock={handleBlock}
-        onUnblock={handleUnblock}
-        onReport={handleReport}
-      />
-    </View>
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!inputText.trim() || sending) && styles.sendButtonDisabled,
+              ]}
+              onPress={sendTextMessage}
+              disabled={!inputText.trim() || sending}
+            >
+              <LinearGradient
+                colors={
+                  !inputText.trim() || sending
+                    ? ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.12)']
+                    : ['#8B2BE2', '#06B6D4']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.sendButtonGradient}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send" size={18} color="#FFFFFF" />
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ) : !hasBlockedRecipient && !isMutual ? (
+          <View
+            style={[
+              styles.shadowChipsContainer,
+              {
+                marginBottom: keyboardHeight,
+                paddingBottom: keyboardHeight > 0 ? 16 : Math.max(16, insets.bottom + 10),
+              },
+            ]}
+          >
+            <Text style={styles.shadowChipsLabel}>Quick Messages</Text>
+            <FlatList
+              data={SHADOW_CHIPS}
+              renderItem={renderShadowChip}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.shadowChipsList}
+            />
+          </View>
+        ) : null}
+
+        {/* Reaction Picker Modal */}
+        {renderReactionPicker()}
+
+        {/* Block & Report Modal */}
+        <BlockReportModal
+          visible={showBlockReportModal}
+          onClose={closeBlockReportModal}
+          userId={recipientId}
+          userName={recipient?.name || displayName}
+          isBlocked={isBlocked}
+          onBlock={handleBlock}
+          onUnblock={handleUnblock}
+          onReport={handleReport}
+        />
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
@@ -1085,17 +1122,17 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Inter-Regular',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
-    backgroundColor: '#16283D',
+    paddingBottom: 14,
+    backgroundColor: 'rgba(26, 21, 48, 0.88)',
     borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
+    borderBottomColor: 'rgba(139, 92, 246, 0.20)',
   },
   backButton: {
     padding: 4,
@@ -1107,10 +1144,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1B2F48',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#16112B',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   headerInfo: {
     marginLeft: 12,
@@ -1118,13 +1157,13 @@ const styles = StyleSheet.create({
   },
   headerName: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   restrictedBadge: {
     fontSize: 12,
-    color: '#F4B400',
-    fontWeight: '500',
+    color: '#22D3EE',
+    fontFamily: 'Inter-Medium',
   },
   headerAction: {
     padding: 8,
@@ -1132,40 +1171,51 @@ const styles = StyleSheet.create({
   restrictedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(244, 180, 0, 0.15)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: 'rgba(26, 21, 48, 0.88)',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   restrictedNoticeText: {
     flex: 1,
     fontSize: 13,
-    color: '#F4B400',
+    color: 'rgba(255,255,255,0.82)',
+    fontFamily: 'Inter-Regular',
   },
   blockedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 77, 109, 0.15)',
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(26, 21, 48, 0.92)',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 77, 109, 0.35)',
   },
   blockedNoticeText: {
     flex: 1,
     fontSize: 13,
     color: '#FF4D6D',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   unblockButton: {
     backgroundColor: '#FF4D6D',
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
   },
   unblockButtonText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   messageListContainer: {
     flex: 1,
@@ -1184,8 +1234,9 @@ const styles = StyleSheet.create({
   emptyMessagesText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
+    fontFamily: 'Inter-Regular',
   },
   messageBubble: {
     paddingHorizontal: 16,
@@ -1193,19 +1244,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   ownMessage: {
-    backgroundColor: '#378BBB',
+    backgroundColor: '#8B2BE2',
     borderBottomRightRadius: 4,
   },
   otherMessage: {
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#1A1530',
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: '#233B57',
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   shadowChipMessage: {
-    borderWidth: 2,
-    borderColor: '#378BBB',
+    borderWidth: 1.5,
+    borderColor: '#8B2BE2',
     borderStyle: 'dashed',
+    backgroundColor: 'rgba(139,92,246,0.18)',
   },
   messageContainer: {
     marginVertical: 2,
@@ -1224,6 +1276,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     lineHeight: 22,
+    fontFamily: 'Inter-Regular',
   },
   ownMessageText: {
     color: '#FFFFFF',
@@ -1242,14 +1295,15 @@ const styles = StyleSheet.create({
   },
   messageTimestamp: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 6,
+    fontFamily: 'Inter-Regular',
   },
   ownMessageTimestamp: {
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'right',
   },
   otherMessageTimestamp: {
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'left',
   },
   reactionsContainer: {
@@ -1273,20 +1327,21 @@ const styles = StyleSheet.create({
   reactionBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderRadius: 12,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: '#233B57',
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   reactionEmoji: {
     fontSize: 14,
   },
   reactionCount: {
     fontSize: 11,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.82)',
     marginLeft: 2,
+    fontFamily: 'Inter-Medium',
   },
   shadowChipBadge: {
     marginTop: 6,
@@ -1294,53 +1349,65 @@ const styles = StyleSheet.create({
   },
   shadowChipBadgeText: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontStyle: 'italic',
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Inter-Regular',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#16283D',
+    paddingTop: 12,
+    backgroundColor: 'rgba(26, 21, 48, 0.94)',
     borderTopWidth: 1,
-    borderTopColor: '#233B57',
+    borderTopColor: 'rgba(139, 92, 246, 0.20)',
     gap: 8,
   },
   photoButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   textInput: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 54,
     maxHeight: 120,
-    backgroundColor: '#1B2F48',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: '#16112B',
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     fontSize: 16,
     color: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    fontFamily: 'Inter-Regular',
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#378BBB',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#233B57',
+    opacity: 0.75,
+  },
+  sendButtonGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Reaction picker styles
   reactionOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(13, 11, 30, 0.70)',
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
@@ -1348,18 +1415,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderRadius: 28,
     paddingHorizontal: 8,
     paddingVertical: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 10,
     alignSelf: 'center',
     borderWidth: 1,
-    borderColor: '#233B57',
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   reactionOption: {
     padding: 8,
@@ -1371,25 +1438,25 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 4,
     borderLeftWidth: 1,
-    borderLeftColor: '#233B57',
+    borderLeftColor: 'rgba(139, 92, 246, 0.20)',
   },
   // Extended emoji picker styles
   extendedEmojiPicker: {
     position: 'absolute',
     top: '30%',
     alignSelf: 'center',
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderRadius: 20,
     padding: 16,
     width: SCREEN_WIDTH - 40,
     maxWidth: 360,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#233B57',
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   extendedEmojiHeader: {
     flexDirection: 'row',
@@ -1398,12 +1465,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
+    borderBottomColor: 'rgba(255,255,255,0.12)',
   },
   extendedEmojiTitle: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
   },
   extendedEmojiClose: {
     padding: 4,
@@ -1424,36 +1491,36 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   shadowChipsContainer: {
-    backgroundColor: '#16283D',
-    paddingVertical: 16,
+    backgroundColor: 'rgba(26, 21, 48, 0.94)',
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#233B57',
+    borderTopColor: 'rgba(139, 92, 246, 0.20)',
   },
   shadowChipsLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     marginLeft: 16,
     marginBottom: 10,
     textTransform: 'uppercase',
+    fontFamily: 'Inter-SemiBold',
   },
   shadowChipsList: {
     paddingHorizontal: 12,
     gap: 8,
   },
   shadowChip: {
-    backgroundColor: 'rgba(55, 139, 187, 0.15)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#378BBB',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   shadowChipText: {
     fontSize: 14,
-    color: '#378BBB',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Medium',
   },
 });
 
