@@ -26,6 +26,9 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  ImageBackground,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -237,128 +240,156 @@ const CreatorGoogleProfileSetupScreen: React.FC<CreatorGoogleProfileSetupScreenP
   // Show loading screen while fetching user data
   if (isLoadingUserData || !googleUser) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" translucent={true} />
+      <ImageBackground
+        source={require('../../assets/images/bg_splash.webp')}
+        style={styles.bg}
+        blurRadius={6}
+      >
+        <View style={styles.overlay} />
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#378BBB" />
+          <ActivityIndicator size="large" color="#A855F7" />
           <Text style={styles.loadingText}>Loading your profile...</Text>
         </View>
-      </View>
+      </ImageBackground>
     );
   }
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" translucent={true} />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.bg}
+      blurRadius={6}
+    >
+      <View style={styles.overlay} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header with Google Info */}
-        <View style={styles.header}>
-          {navigation.canGoBack() ? (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setShowLogoutAlert(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="log-out-outline" size={26} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
-          <Text style={styles.title}>Complete Your Profile</Text>
-          <Text style={styles.subtitle}>Just a few more details</Text>
-
-          {/* Google Account Info */}
-          <View style={styles.googleInfoContainer}>
-            {googleUser.photoURL && (
-              <Image
-                source={{ uri: googleUser.photoURL }}
-                style={styles.googleAvatar}
-              />
-            )}
-            <View style={styles.googleTextContainer}>
-              <Text style={styles.googleLabel}>Signing in with Google</Text>
-              <Text style={styles.googleEmail}>{googleUser.email}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Form Fields */}
-        <View style={styles.form}>
-          <View>
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={[styles.input, focusedInput === 'fullName' && styles.inputFocused]}
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Your Name"
-              placeholderTextColor="#7F93AA"
-              autoCapitalize="words"
-              editable={!loading}
-              onFocus={() => setFocusedInput('fullName')}
-              onBlur={() => setFocusedInput(null)}
-            />
-          </View>
-
-          <View>
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.usernameContainer}>
-              <TextInput
-                style={[styles.input, focusedInput === 'username' && styles.inputFocused]}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="@username"
-                placeholderTextColor="#7F93AA"
-                autoCapitalize="none"
-                editable={!loading}
-                onFocus={() => setFocusedInput('username')}
-                onBlur={() => setFocusedInput(null)}
-              />
-              {username.length >= 3 && (
-                <View style={styles.usernameStatus}>
-                  {checkingUsername ? (
-                    <ActivityIndicator size="small" color="#FF4458" />
-                  ) : usernameAvailable === true ? (
-                    <Text style={styles.availableText}>✓ Available</Text>
-                  ) : usernameAvailable === false ? (
-                    <Text style={styles.unavailableText}>✗ Taken</Text>
-                  ) : null}
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          onPress={handleContinue}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={['#378BBB', '#4FC3F7']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
-            style={[styles.continueButton, { marginBottom: Math.max(32, insets.bottom + 16) }]}
+      {/* Funmate Logo Header */}
+      <View style={[styles.topHeader, { paddingTop: insets.top + 8 }]}>
+        {navigation.canGoBack() ? (
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.continueButtonText}>Continue</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={() => setShowLogoutAlert(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+        <View style={styles.logoRow}>
+          <Image source={require('../../assets/logo.png')} style={styles.logoImage} />
+          <Text style={styles.appName}>Funmate</Text>
+        </View>
+        <View style={styles.headerBtn} />
+      </View>
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+          setFocusedInput(null);
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Page title + Google account info */}
+            <View style={styles.pageHeader}>
+              <Text style={styles.title}>Complete Your Profile</Text>
+              <Text style={styles.subtitle}>Just a few more details</Text>
+
+              {/* Google Account Info */}
+              <View style={styles.googleInfoContainer}>
+                {googleUser.photoURL && (
+                  <Image
+                    source={{ uri: googleUser.photoURL }}
+                    style={styles.googleAvatar}
+                  />
+                )}
+                <View style={styles.googleTextContainer}>
+                  <Text style={styles.googleLabel}>Signing in with Google</Text>
+                  <Text style={styles.googleEmail}>{googleUser.email}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Form Fields */}
+            <View style={styles.form}>
+              <View>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={[styles.input, focusedInput === 'fullName' && styles.inputFocused]}
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Your Name"
+                  placeholderTextColor="#7F93AA"
+                  autoCapitalize="words"
+                  editable={!loading}
+                  onFocus={() => setFocusedInput('fullName')}
+                  onBlur={() => setFocusedInput(null)}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.label}>Username</Text>
+                <View style={styles.usernameContainer}>
+                  <TextInput
+                    style={[styles.input, focusedInput === 'username' && styles.inputFocused]}
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="@username"
+                    placeholderTextColor="#7F93AA"
+                    autoCapitalize="none"
+                    editable={!loading}
+                    onFocus={() => setFocusedInput('username')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                  {username.length >= 3 && (
+                    <View style={styles.usernameStatus}>
+                      {checkingUsername ? (
+                        <ActivityIndicator size="small" color="#A855F7" />
+                      ) : usernameAvailable === true ? (
+                        <Text style={styles.availableText}>✓ Available</Text>
+                      ) : usernameAvailable === false ? (
+                        <Text style={styles.unavailableText}>✗ Taken</Text>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Continue Button */}
+            <TouchableOpacity
+              onPress={handleContinue}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#8B2BE2', '#06B6D4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.continueButton, { marginBottom: Math.max(32, insets.bottom + 16) }]}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.continueButtonText}>Continue</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.bottomSpacer} />
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
 
       {/* Logout Confirmation Modal */}
       <Modal
@@ -399,7 +430,7 @@ const CreatorGoogleProfileSetupScreen: React.FC<CreatorGoogleProfileSetupScreenP
           </View>
         </View>
       </Modal>
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -407,6 +438,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0E1621',
+  },
+  bg: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13,11,30,0.62)',
   },
   loadingContainer: {
     flex: 1,
@@ -416,11 +454,45 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#B8C7D9',
-    fontFamily: 'Inter_24pt-Regular',
+    color: 'rgba(255,255,255,0.60)',
+    fontFamily: 'Inter-Regular',
   },
   scrollView: {
     flex: 1,
+  },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  headerBtn: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoImage: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+  },
+  appName: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    letterSpacing: 0.3,
+  },
+  pageHeader: {
+    paddingHorizontal: 32,
+    paddingTop: 58,
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 32,
@@ -436,89 +508,86 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
-    fontFamily: 'Inter_24pt-Bold',
+    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#B8C7D9',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.50)',
     marginBottom: 20,
-    fontFamily: 'Inter_24pt-Regular',
+    fontFamily: 'Inter-Regular',
   },
   googleInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
-    borderRadius: 12,
+    backgroundColor: 'rgba(30,28,45,0.88)',
+    borderRadius: 14,
     padding: 12,
-    borderWidth: 1,
-    borderColor: '#233B57',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   googleAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     marginRight: 12,
   },
   googleTextContainer: {
     flex: 1,
   },
   googleLabel: {
-    fontSize: 12,
-    color: '#7F93AA',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.45)',
     marginBottom: 2,
-    fontFamily: 'Inter_24pt-Regular',
+    fontFamily: 'Inter-Regular',
   },
   googleEmail: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
-    fontWeight: '500',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   form: {
     paddingHorizontal: 32,
     gap: 20,
-    marginTop: 24,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#B8C7D9',
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 8,
-    fontFamily: 'Inter_24pt-Bold',
   },
   input: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(45,43,58,0.85)',
+    borderRadius: 14,
+    paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 16,
     color: '#FFFFFF',
-    height: 56,
+    height: 54,
     justifyContent: 'center',
-    fontFamily: 'Inter_24pt-Regular',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    fontFamily: 'Inter-Regular',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
   },
   inputFocused: {
-    borderColor: '#378BBB',
-    shadowColor: '#378BBB',
+    borderColor: 'rgba(139,92,246,0.80)',
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
   },
   inputText: {
     fontSize: 16,
     color: '#FFFFFF',
-    fontFamily: 'Inter_24pt-Regular',
+    fontFamily: 'Inter-Regular',
   },
   placeholderText: {
     fontSize: 16,
-    color: '#7F93AA',
-    fontFamily: 'Inter_24pt-Regular',
+    color: 'rgba(255,255,255,0.35)',
+    fontFamily: 'Inter-Regular',
   },
   usernameContainer: {
     position: 'relative',
@@ -532,34 +601,31 @@ const styles = StyleSheet.create({
   },
   availableText: {
     color: '#2ECC71',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
   unavailableText: {
     color: '#FF4D6D',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
   },
   continueButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-    borderRadius: 12,
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 32,
-    marginTop: 24,
-    shadowColor: '#378BBB',
+    marginTop: 32,
+    shadowColor: '#8B2BE2',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
   },
   bottomSpacer: {
     height: 40,
@@ -572,29 +638,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   alertBox: {
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 340,
-    borderWidth: 1,
-    borderColor: '#233B57',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   alertTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-Bold',
   },
   alertMessage: {
     fontSize: 15,
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
-    fontFamily: 'Inter_24pt-Regular',
+    fontFamily: 'Inter-Regular',
   },
   alertButtons: {
     flexDirection: 'row',
@@ -603,17 +668,16 @@ const styles = StyleSheet.create({
   alertCancelButton: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#233B57',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
   alertCancelText: {
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   alertLogoutButton: {
     flex: 1,
@@ -625,8 +689,7 @@ const styles = StyleSheet.create({
   alertLogoutText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_24pt-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
 });
 
