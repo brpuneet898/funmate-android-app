@@ -270,8 +270,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     color: '#FFFFFF',
+    marginTop: 35,
     marginBottom: 10,
     fontFamily: 'Inter-Bold',
     textAlign: 'left',
@@ -290,6 +291,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     borderWidth: 1.5,
     borderColor: 'rgba(139, 92, 246, 0.25)',
+    opacity: 2,
   },
   optionCardSelected: {
     borderColor: '#8B2BE2',
@@ -372,8 +374,8 @@ const styles = StyleSheet.create({
   continueButtonDisabled: {
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.12)',
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowOpacity: 0.8,
+    elevation: 1,
   },
   continueButtonText: {
     color: '#FFFFFF',
