@@ -28,6 +28,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, CommonActions } from '@react-navigation/native';
@@ -35,7 +36,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { launchImageLibrary } from 'react-native-image-picker';
+import ImageCropPicker from 'react-native-image-crop-picker';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
@@ -99,7 +100,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
 
   const borderColor = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#233B57', '#378BBB'],
+    outputRange: ['rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.80)'],
   });
 
   return (
@@ -112,7 +113,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
       <Ionicons
         name={iconName as any}
         size={20}
-        color="#7F93AA"
+        color="rgba(255,255,255,0.55)"
         style={multiline ? styles.textAreaIcon : styles.inputIcon}
       />
       <TextInput
@@ -120,7 +121,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
         multiline={multiline}
         numberOfLines={numberOfLines}
         style={multiline ? styles.textArea : styles.input}
-        placeholderTextColor="#7F93AA"
+       placeholderTextColor="rgba(255,255,255,0.35)"
         onFocus={handleFocus}
         onBlur={handleBlur}
         textAlignVertical={multiline ? 'top' : 'center'}
@@ -149,6 +150,8 @@ const MerchantProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showLogoModal, setShowLogoModal] = useState(false);
+  const [tempImage, setTempImage] = useState<any>(null);
 
   const canGoBack = useRef(navigation.canGoBack()).current;
 
@@ -222,34 +225,74 @@ const MerchantProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handlePickLogo = () => {
-    launchImageLibrary(
-      {
+  const handlePickLogo = async () => {
+    try {
+      const image = await ImageCropPicker.openPicker({
         mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        includeBase64: false,
-      },
-      (response) => {
-        if (response.didCancel) {
-          return;
-        }
+        cropping: false,
+        compressImageQuality: 0.8,
+        width: 1024,
+        height: 1024,
+      });
 
-        if (response.errorCode) {
-          Toast.show({
-            type: 'error',
-            text1: 'Image Selection Error',
-            text2: response.errorMessage || 'Failed to select image',
-          });
-          return;
-        }
+      // Alert.alert(
+      //   'Use this logo?',
+      //   'You can crop it first or continue with the full image.',
+      //   [
+      //     {
+      //       text: 'Cancel',
+      //       style: 'cancel',
+      //     },
+      //     {
+      //       text: 'Use As Is',
+      //       onPress: () => {
+      //         setLogoUri(image.path);
+      //       },
+      //     },
+      //     {
+      //       text: 'Crop Logo',
+      //       onPress: async () => {
+      //         try {
+      //           const cropped = await ImageCropPicker.openCropper({
+      //             path: image.path,
+      //             mediaType: 'photo',
+      //             width: 1024,
+      //             height: 1024,
+      //             cropping: true,
+      //             cropperToolbarTitle: 'Crop Logo',
+      //             includeBase64: false,
+      //             compressImageQuality: 0.8,
+      //           });
 
-        if (response.assets && response.assets[0]) {
-          setLogoUri(response.assets[0].uri || null);
-        }
+      //           setLogoUri(cropped.path);
+      //         } catch (cropError: any) {
+      //           if (cropError?.code === 'E_PICKER_CANCELLED') {
+      //             return;
+      //           }
+
+      //           Toast.show({
+      //             type: 'error',
+      //             text1: 'Crop Failed',
+      //             text2: 'Please try again',
+      //           });
+      //         }
+      //       },
+      //     },
+      //   ]
+      // );
+      setTempImage(image);
+      setShowLogoModal(true);
+    } catch (error: any) {
+      if (error?.code === 'E_PICKER_CANCELLED') {
+        return;
       }
-    );
+
+      Toast.show({
+        type: 'error',
+        text1: 'Image Selection Error',
+        text2: 'Failed to select image',
+      });
+    }
   };
 
   const uploadLogo = async (uri: string): Promise<string> => {
@@ -418,269 +461,368 @@ const MerchantProfileScreen: React.FC<Props> = ({ navigation }) => {
   if (isLoadingData) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#378BBB" />
+        <ActivityIndicator size="large" color="#8B2BE2" />
         <Text style={styles.loadingText}>Loading your details...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_party.webp')}
+      style={styles.background}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {canGoBack && (
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          canGoBack ? styles.contentWithHeader : styles.contentNoHeader,
-          { paddingBottom: Math.max(120, insets.bottom + 80) },
-        ]}
-        showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={150}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title Section */}
-        <View style={styles.titleSection}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="storefront-outline" size={32} color="#378BBB" />
+        {canGoBack && (
+          <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.title}>Your Business Profile</Text>
-          <Text style={styles.subtitle}>
-            This is how your brand will appear on event pages
-          </Text>
-        </View>
+        )}
 
-        {/* Form Section */}
-        <View style={styles.formSection}>
-          {/* Business Name */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>
-              Business Name <Text style={styles.required}>*</Text>
-            </Text>
-            <GlowInput
-              iconName="business-outline"
-              placeholder="e.g., Aurora Events Pvt Ltd"
-              value={businessName}
-              onChangeText={setBusinessName}
-              autoCapitalize="words"
-            />
-          </View>
-
-          {/* Description */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>
-              Business Description <Text style={styles.required}>*</Text>
-            </Text>
-            <GlowInput
-              iconName=""
-              placeholder="Tell people about your business... (min 20 characters)"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-            />
-            <Text style={styles.charCount}>
-              {description.length}/500 characters
-            </Text>
-          </View>
-
-          {/* Logo Upload Section */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>
-              Business Logo <Text style={styles.required}>*</Text>
-            </Text>
-            {logoUri ? (
-              <View style={styles.logoRow}>
-                {/* Logo Preview Box */}
-                <View style={styles.logoBoxWrapper}>
-                  <View style={styles.logoBox}>
-                    <Image source={{ uri: logoUri }} style={styles.logoImage} />
-                    {isUploadingLogo && (
-                      <View style={styles.uploadingOverlay}>
-                        <ActivityIndicator color="#FFFFFF" size="small" />
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                {/* Logo Actions */}
-                <View style={styles.logoInfoContainer}>
-                  <View style={styles.logoActionsColumn}>
-                    <TouchableOpacity
-                      style={styles.changeLogoButton}
-                      onPress={handlePickLogo}
-                      disabled={isUploadingLogo}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="camera-outline" size={18} color="#378BBB" />
-                      <Text style={styles.changeButtonText}>Change Logo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.removeLogoButton}
-                      onPress={() => setLogoUri(null)}
-                      disabled={isUploadingLogo}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#FF5252" />
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.uploadPrompt}>
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={handlePickLogo}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.uploadButtonText}>Upload Logo</Text>
-                </TouchableOpacity>
-                <Text style={styles.uploadHint}>
-                  Square image (512x512) • PNG or JPG, max 5MB
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Business Address */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>
-              Business Address <Text style={styles.required}>*</Text>
-            </Text>
-            <GlowInput
-              iconName="location-outline"
-              placeholder="Address Line (Street, Building)"
-              value={addressLine}
-              onChangeText={setAddressLine}
-              autoCapitalize="words"
-            />
-            <View style={styles.addressRow}>
-              <View style={styles.addressHalf}>
-                <GlowInput
-                  iconName="location-outline"
-                  placeholder="City"
-                  value={city}
-                  onChangeText={setCity}
-                  autoCapitalize="words"
-                />
-              </View>
-              <View style={styles.addressHalf}>
-                <GlowInput
-                  iconName="location-outline"
-                  placeholder="State"
-                  value={state}
-                  onChangeText={setState}
-                  autoCapitalize="words"
-                />
-              </View>
-            </View>
-            <GlowInput
-              iconName="globe-outline"
-              placeholder="Country"
-              value={country}
-              onChangeText={setCountry}
-              autoCapitalize="words"
-            />
-          </View>
-
-          {/* Social Links (Optional) */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Social Links (Optional)</Text>
-            <GlowInput
-              iconName="logo-instagram"
-              placeholder="Instagram URL (e.g., https://instagram.com/yourpage)"
-              value={instagram}
-              onChangeText={setInstagram}
-              autoCapitalize="none"
-            />
-            <GlowInput
-              iconName="logo-linkedin"
-              placeholder="LinkedIn URL"
-              value={linkedin}
-              onChangeText={setLinkedin}
-              autoCapitalize="none"
-            />
-            <GlowInput
-              iconName="globe-outline"
-              placeholder="Website URL"
-              value={website}
-              onChangeText={setWebsite}
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Contact Email (Optional) */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Contact Email (Optional)</Text>
-            <GlowInput
-              iconName="mail-outline"
-              placeholder="customer@yourbusiness.com"
-              value={contactEmail}
-              onChangeText={setContactEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Text style={styles.helperText}>
-              For customer inquiries (can be same as your account email)
-            </Text>
-          </View>
-        </View>
-
-        {/* Save Button */}
-        <TouchableOpacity
-          onPress={handleSaveProfile}
-          disabled={!isFormComplete() || isSaving || isUploadingLogo}
-          activeOpacity={0.8}
-          style={styles.saveButtonContainer}
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.content,
+            canGoBack ? styles.contentWithHeader : styles.contentNoHeader,
+            { paddingBottom: Math.max(140, insets.bottom + 96) },
+          ]}
+          showsVerticalScrollIndicator={false}
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={150}
+          keyboardShouldPersistTaps="handled"
         >
-          <LinearGradient
-            colors={
-              isFormComplete() && !isSaving && !isUploadingLogo
-                ? ['#378BBB', '#4FC3F7']
-                : ['#1B2F48', '#1B2F48']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.saveButton}
+          {/* Title Section */}
+          <View style={styles.titleSection}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="storefront-outline" size={32} color="#A855F7" />
+            </View>
+            <Text style={styles.title}>Your Business Profile</Text>
+            <Text style={styles.subtitle}>
+              This is how your brand will appear on event pages
+            </Text>
+          </View>
+
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            {/* Business Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>
+                Business Name <Text style={styles.required}>*</Text>
+              </Text>
+              <GlowInput
+                iconName="business-outline"
+                placeholder="e.g., Aurora Events Pvt Ltd"
+                value={businessName}
+                onChangeText={setBusinessName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            {/* Description */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>
+                Business Description <Text style={styles.required}>*</Text>
+              </Text>
+              <GlowInput
+                iconName=""
+                placeholder="Tell people about your business... (min 20 characters)"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                maxLength={500}
+              />
+              <Text style={styles.charCount}>
+                {description.length}/500 characters
+              </Text>
+            </View>
+
+            {/* Logo Upload Section */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>
+                Business Logo <Text style={styles.required}>*</Text>
+              </Text>
+              {logoUri ? (
+                <View style={styles.logoRow}>
+                  <View style={styles.logoBoxWrapper}>
+                    <View style={styles.logoBox}>
+                      <Image source={{ uri: logoUri }} style={styles.logoImage} />
+                      {isUploadingLogo && (
+                        <View style={styles.uploadingOverlay}>
+                          <ActivityIndicator color="#FFFFFF" size="small" />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.logoInfoContainer}>
+                    <View style={styles.logoActionsColumn}>
+                      <TouchableOpacity
+                        style={styles.changeLogoButton}
+                        onPress={handlePickLogo}
+                        disabled={isUploadingLogo}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="camera-outline" size={18} color="#8B2BE2" />
+                        <Text style={styles.changeButtonText}>Change Logo</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeLogoButton}
+                        onPress={() => setLogoUri(null)}
+                        disabled={isUploadingLogo}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#FF5252" />
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.uploadPrompt}>
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={handlePickLogo}
+                    activeOpacity={0.85}
+                  >
+                    <LinearGradient
+                      colors={['#8B2BE2', '#06B6D4']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.uploadButtonGradient}
+                    >
+                      <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
+                      <Text style={styles.uploadButtonText}>Upload Logo</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                  <Text style={styles.uploadHint}>
+                    Square image (512x512) • PNG or JPG, max 5MB
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Business Address */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>
+                Business Address <Text style={styles.required}>*</Text>
+              </Text>
+              <GlowInput
+                iconName="location-outline"
+                placeholder="Address Line (Street, Building)"
+                value={addressLine}
+                onChangeText={setAddressLine}
+                autoCapitalize="words"
+              />
+              <View style={styles.addressRow}>
+                <View style={styles.addressHalf}>
+                  <GlowInput
+                    iconName="location-outline"
+                    placeholder="City"
+                    value={city}
+                    onChangeText={setCity}
+                    autoCapitalize="words"
+                  />
+                </View>
+                <View style={styles.addressHalf}>
+                  <GlowInput
+                    iconName="location-outline"
+                    placeholder="State"
+                    value={state}
+                    onChangeText={setState}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+              <GlowInput
+                iconName="globe-outline"
+                placeholder="Country"
+                value={country}
+                onChangeText={setCountry}
+                autoCapitalize="words"
+              />
+            </View>
+
+            {/* Social Links (Optional) */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Social Links (Optional)</Text>
+              <GlowInput
+                iconName="logo-instagram"
+                placeholder="Instagram URL (e.g., https://instagram.com/yourpage)"
+                value={instagram}
+                onChangeText={setInstagram}
+                autoCapitalize="none"
+              />
+              <GlowInput
+                iconName="logo-linkedin"
+                placeholder="LinkedIn URL"
+                value={linkedin}
+                onChangeText={setLinkedin}
+                autoCapitalize="none"
+              />
+              <GlowInput
+                iconName="globe-outline"
+                placeholder="Website URL"
+                value={website}
+                onChangeText={setWebsite}
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Contact Email (Optional) */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Contact Email (Optional)</Text>
+              <GlowInput
+                iconName="mail-outline"
+                placeholder="customer@yourbusiness.com"
+                value={contactEmail}
+                onChangeText={setContactEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Text style={styles.helperText}>
+                For customer inquiries (can be same as your account email)
+              </Text>
+            </View>
+          </View>
+
+          {/* Save Button */}
+          <TouchableOpacity
+            onPress={handleSaveProfile}
+            disabled={!isFormComplete() || isSaving || isUploadingLogo}
+            activeOpacity={0.8}
+            style={styles.saveButtonContainer}
           >
-            {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <>
+            <LinearGradient
+              colors={
+                isFormComplete() && !isSaving && !isUploadingLogo
+                  ? ['#8B2BE2', '#06B6D4']
+                  : ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.12)']
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveButton}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
                 <Text style={styles.saveButtonText}>Complete Setup</Text>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </KeyboardAwareScrollView>
-    </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </KeyboardAwareScrollView>
+      </View>
+      {showLogoModal && (
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          
+          <Text style={styles.modalTitle}>Use this logo?</Text>
+          {tempImage?.path && (
+            <Image
+              source={{ uri: tempImage.path }}
+              style={styles.modalPreviewImage}
+              resizeMode="cover"
+            />
+          )}
+          <Text style={styles.modalSubtitle}>
+            You can crop it first or continue with the full image
+          </Text>
+
+          <View style={styles.modalActions}>
+            
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => {
+                setShowLogoModal(false);
+                setTempImage(null);
+              }}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalSecondary}
+              onPress={() => {
+                if (!tempImage?.path) return;
+                setLogoUri(tempImage.path);
+                setShowLogoModal(false);
+                setTempImage(null);
+              }}
+            >
+              <Text style={styles.modalSecondaryText}>Use As Is</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={async () => {
+                if (!tempImage?.path) return;
+
+                try {
+                  const cropped = await ImageCropPicker.openCropper({
+                    path: tempImage.path,
+                    width: 1024,
+                    height: 1024,
+                    cropperToolbarTitle: 'Crop Logo',
+                    includeBase64: false,
+                    compressImageQuality: 0.8,
+                  });
+
+                  setLogoUri(cropped.path);
+                  setShowLogoModal(false);
+                  setTempImage(null);
+                } catch (error: any) {
+                  if (error?.code === 'E_PICKER_CANCELLED') {
+                    return;
+                  }
+
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Crop Failed',
+                    text2: 'Please try again',
+                  });
+                }
+              }}
+            >
+              <LinearGradient
+                colors={['#8B2BE2', '#06B6D4']}
+                style={styles.modalPrimary}
+              >
+                <Text style={styles.modalPrimaryText}>Crop Logo</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </View>
+    )}
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -688,7 +830,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 15,
     fontFamily: 'Inter-Medium',
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
   },
   header: {
     position: 'absolute',
@@ -698,10 +840,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingBottom: 12,
     zIndex: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0)',
   },
   backButton: {
     padding: 8,
@@ -713,10 +854,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentWithHeader: {
-    paddingTop: 100,
+    paddingTop: 112,
   },
   contentNoHeader: {
-    paddingTop: 60,
+    paddingTop: 72,
   },
   titleSection: {
     alignItems: 'center',
@@ -726,7 +867,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -741,13 +884,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
   },
   required: {
-    color: '#FF5252',
+    color: '#FF4D6D',
   },
   logoRow: {
     flexDirection: 'row',
@@ -761,13 +904,13 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#378BBB',
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.25)',
     borderStyle: 'dashed',
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(55, 139, 187, 0.05)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   logoImage: {
     width: '100%',
@@ -792,15 +935,15 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(139,92,246,0.12)',
     borderWidth: 1,
-    borderColor: '#378BBB',
+    borderColor: 'rgba(139,92,246,0.30)',
   },
   changeButtonText: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#8B2BE2',
   },
   removeLogoButton: {
     flexDirection: 'row',
@@ -823,34 +966,32 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   uploadButton: {
+    borderRadius: 30,
+    overflow: 'hidden',
+  },
+  uploadButtonGradient: {
+    height: 54,
+    borderRadius: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: '#378BBB',
-    shadowColor: '#378BBB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   uploadButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   uploadHint: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     lineHeight: 18,
   },
   uploadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(14, 22, 33, 0.9)',
+    backgroundColor: 'rgba(13, 11, 30, 0.82)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -858,7 +999,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
   },
   formSection: {
@@ -876,32 +1017,35 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    height: 56,
+    backgroundColor: 'rgba(66, 66, 66, 0.7)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    marginBottom: 16,
+    minHeight: 54,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     paddingVertical: 0,
   },
   textAreaContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(66, 66, 66, 0.7)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     marginBottom: 12,
-    minHeight: 120,
+    minHeight: 132,
   },
   textAreaIcon: {
     marginRight: 12,
@@ -909,15 +1053,16 @@ const styles = StyleSheet.create({
   },
   textArea: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
-    minHeight: 100,
+    minHeight: 96,
+    paddingVertical: 6,
   },
   charCount: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
     textAlign: 'right',
     marginTop: -8,
   },
@@ -929,20 +1074,97 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   saveButtonContainer: {
-    marginBottom: 40,
+    marginBottom: 64,
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: 30,
+    height: 54,
     gap: 10,
   },
   saveButtonText: {
     fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(13, 11, 30, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+
+  modalContainer: {
+    width: '85%',
+    backgroundColor: '#1A1530',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+
+  modalSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 20,
+  },
+
+  modalActions: {
+    gap: 12,
+  },
+
+  modalCancel: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+
+  modalCancelText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Inter-Medium',
+  },
+
+  modalSecondary: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+
+  modalSecondaryText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+
+  modalPrimary: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+
+  modalPrimaryText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+  modalPreviewImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    marginBottom: 14,
   },
 });
 
