@@ -26,6 +26,7 @@ import {
   Animated,
   ActivityIndicator,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, CommonActions } from '@react-navigation/native';
@@ -104,7 +105,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
 
   const borderColor = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#233B57', '#378BBB'],
+    outputRange: ['rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.80)'],
   });
 
   return (
@@ -123,7 +124,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
         <Ionicons
           name={iconName as any}
           size={20}
-          color="#7F93AA"
+          color="rgba(255,255,255,0.55)"
           style={[styles.inputIcon, multiline && styles.inputIconMultiline]}
         />
       )}
@@ -134,7 +135,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
           style,
           multiline && styles.inputMultiline,
         ]}
-        placeholderTextColor="#7F93AA"
+        placeholderTextColor="rgba(255,255,255,0.35)"
         onFocus={handleFocus}
         onBlur={handleBlur}
         multiline={multiline}
@@ -159,16 +160,16 @@ const GlowingSocialInput: React.FC<{
       style={[
         style,
         focused && {
-          borderColor: '#378BBB',
-          shadowColor: '#378BBB',
+          borderColor: 'rgba(139, 92, 246, 0.80)',
+          shadowColor: '#8B2BE2',
           shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.6,
-          shadowRadius: 12,
-          elevation: 8,
+          shadowOpacity: 0.28,
+          shadowRadius: 10,
+          elevation: 6,
         },
       ]}
       placeholder={placeholder}
-      placeholderTextColor="#7F93AA"
+      placeholderTextColor="rgba(255,255,255,0.35)"
       value={value}
       onChangeText={onChangeText}
       onFocus={() => setFocused(true)}
@@ -292,11 +293,17 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.background}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {canGoBack && (
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -311,7 +318,7 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={[
           styles.content,
           canGoBack ? styles.contentWithHeader : styles.contentNoHeader,
-          { paddingBottom: Math.max(120, insets.bottom + 80) },
+          { paddingBottom: Math.max(140, insets.bottom + 96) },
         ]}
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
@@ -322,7 +329,7 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
         {/* Title Section */}
         <View style={styles.titleSection}>
           <View style={styles.iconCircle}>
-            <Ionicons name="person-circle-outline" size={32} color="#378BBB" />
+            <Ionicons name="person-circle-outline" size={32} color="#A855F7" />
           </View>
           <Text style={styles.title}>Complete Your Host Profile</Text>
           <Text style={styles.subtitle}>
@@ -376,14 +383,14 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={styles.dropdownContainer}>
-              <Ionicons name="pricetag-outline" size={20} color="#7F93AA" style={styles.inputIcon} />
+              <Ionicons name="pricetag-outline" size={20} color="rgba(255,255,255,0.55)" style={styles.inputIcon} />
               <Text style={[styles.dropdownText, !category && styles.dropdownPlaceholder]}>
                 {category || 'Select your main event category'}
               </Text>
               <Ionicons
                 name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'}
                 size={20}
-                color="#7F93AA"
+                color="rgba(255,255,255,0.55)"
               />
             </View>
           </TouchableOpacity>
@@ -409,7 +416,7 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
                       {cat}
                     </Text>
                     {category === cat && (
-                      <Ionicons name="checkmark" size={20} color="#378BBB" />
+                      <Ionicons name="checkmark" size={20} color="#8B2BE2" />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -494,11 +501,11 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.submitButtonContainer}
         >
           <LinearGradient
-            colors={
-              isFormValid() && !isSubmitting
-                ? ['#378BBB', '#4FC3F7']
-                : ['#1B2F48', '#1B2F48']
-            }
+              colors={
+                isFormValid() && !isSubmitting
+                  ? ['#8B2BE2', '#06B6D4']
+                  : ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.12)']
+              }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.submitButton}
@@ -514,6 +521,7 @@ const IndividualHostProfileScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </KeyboardAwareScrollView>
     </View>
+    </ImageBackground>
   );
 };
 
@@ -521,6 +529,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0E1621',
+  },
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   header: {
     position: 'absolute',
@@ -530,10 +545,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingBottom: 12,
     zIndex: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0)',
   },
   backButton: {
     padding: 8,
@@ -545,10 +559,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentWithHeader: {
-    paddingTop: 100,
+    paddingTop: 112,
   },
   contentNoHeader: {
-    paddingTop: 60,
+    paddingTop: 72,
   },
   titleSection: {
     alignItems: 'center',
@@ -558,7 +572,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -573,7 +589,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
@@ -593,29 +609,30 @@ const styles = StyleSheet.create({
   optional: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
   },
   helperText: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 12,
     lineHeight: 18,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
     marginBottom: 16,
-    minHeight: 56,
+    minHeight: 54,
   },
   inputContainerMultiline: {
     alignItems: 'flex-start',
-    paddingVertical: 12,
-    minHeight: 120,
+    paddingVertical: 14,
+    minHeight: 132,
   },
   inputIcon: {
     marginRight: 12,
@@ -625,21 +642,21 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     paddingVertical: 0,
   },
   inputMultiline: {
-    paddingVertical: 8,
-    minHeight: 90,
+    paddingVertical: 6,
+    minHeight: 96,
   },
   characterCount: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
     textAlign: 'right',
-    marginTop: -12,
+    marginTop: -10,
   },
   sectionTitle: {
     fontSize: 17,
@@ -658,46 +675,47 @@ const styles = StyleSheet.create({
   socialIconWrapper: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   socialInput: {
     flex: 1,
-    backgroundColor: '#1B2F48',
+    backgroundColor: '#16112B',
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#233B57',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
   dropdownContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#233B57',
-    paddingHorizontal: 16,
-    height: 56,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    height: 54,
   },
   dropdownText: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
   dropdownPlaceholder: {
-    color: '#7F93AA',
+    color: 'rgba(255,255,255,0.35)',
   },
   dropdown: {
-    backgroundColor: '#16283D',
-    borderRadius: 12,
+    backgroundColor: '#1A1530',
+    borderRadius: 14,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#233B57',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     maxHeight: 250,
   },
   dropdownScroll: {
@@ -710,25 +728,25 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#233B57',
+    borderBottomColor: 'rgba(255,255,255,0.12)',
   },
   dropdownItemText: {
     fontSize: 15,
     fontFamily: 'Inter-Medium',
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.55)',
   },
   dropdownItemTextSelected: {
-    color: '#378BBB',
+    color: '#8B2BE2',
   },
   submitButtonContainer: {
-    marginBottom: 40,
+    marginBottom: 64,
   },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: 30,
+    height: 54,
     gap: 10,
   },
   submitButtonText: {
