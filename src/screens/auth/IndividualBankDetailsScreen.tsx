@@ -8,6 +8,7 @@ import {
   StatusBar,
   Animated,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -79,7 +80,7 @@ const GlowInput: React.FC<GlowInputProps> = ({
 
   const borderColor = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#233B57', '#378BBB'],
+    outputRange: ['rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.80)'],
   });
 
   return (
@@ -87,13 +88,13 @@ const GlowInput: React.FC<GlowInputProps> = ({
       <Ionicons
         name={iconName as any}
         size={20}
-        color="#7F93AA"
+        color="rgba(255, 255, 255, 0.55)"
         style={styles.inputIcon}
       />
       <TextInput
         {...inputProps}
         style={[styles.input, style]}
-        placeholderTextColor="#7F93AA"
+        placeholderTextColor="rgba(255,255,255,0.35)"
         onFocus={handleFocus}
         onBlur={handleBlur}
       />
@@ -597,209 +598,251 @@ const IndividualBankDetailsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
 
-      {canGoBack && (
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          canGoBack ? styles.contentWithHeader : styles.contentNoHeader,
-          { paddingBottom: Math.max(120, insets.bottom + 80) },
-        ]}
-        showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={150}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title Section */}
-        <View style={styles.titleSection}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="card-outline" size={32} color="#378BBB" />
+        {canGoBack && (
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.title}>Payout Bank Details</Text>
-          <Text style={styles.subtitle}>
-            Enter your bank details to receive event payouts
-          </Text>
-        </View>
+        )}
 
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Ionicons name="shield-checkmark" size={20} color="#2ECC71" />
-            <Text style={styles.infoText}>
-              Your account will be verified securely
-            </Text>
-          </View>
-        </View>
-
-        {/* Form Section */}
-        <View style={styles.formSection}>
-          <GlowInput
-            iconName="person-outline"
-            placeholder="Account Holder Name"
-            value={accountHolderName}
-            onChangeText={setAccountHolderName}
-            autoCapitalize="words"
-          />
-
-          <GlowInput
-            iconName="card-outline"
-            placeholder="Account Number"
-            value={accountNumber}
-            onChangeText={setAccountNumber}
-            keyboardType="numeric"
-            maxLength={18}
-          />
-
-          <GlowInput
-            iconName="card-outline"
-            placeholder="Confirm Account Number"
-            value={confirmAccountNumber}
-            onChangeText={setConfirmAccountNumber}
-            keyboardType="numeric"
-            maxLength={18}
-          />
-          {confirmAccountNumber && accountNumber !== confirmAccountNumber && (
-            <Text style={styles.errorText}>Account numbers do not match</Text>
-          )}
-
-          <GlowInput
-            iconName="git-branch-outline"
-            placeholder="IFSC Code (e.g., SBIN0001234)"
-            value={ifscCode}
-            onChangeText={handleIfscChange}
-            autoCapitalize="characters"
-            maxLength={11}
-          />
-
-          {/* Bank Name - Auto-filled & Disabled */}
-          <View style={styles.bankNameContainer}>
-            <View style={[styles.inputContainer, { borderColor: '#233B57' }]} pointerEvents="none">
-              <Ionicons
-                name="business-outline"
-                size={20}
-                color="#7F93AA"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                placeholder="Bank Name (Auto-filled)"
-                value={bankName}
-                editable={false}
-                style={[styles.input, styles.disabledInput]}
-                placeholderTextColor="#7F93AA"
-              />
-            </View>
-            {isFetchingBank && (
-              <View style={styles.fetchingIndicator}>
-                <ActivityIndicator size="small" color="#378BBB" />
-              </View>
-            )}
-          </View>
-
-          {/* Account Type Radio Buttons */}
-          <View style={styles.accountTypeSection}>
-            <Text style={styles.accountTypeLabel}>Account Type</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => setAccountType('savings')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.radioCircle}>
-                  {accountType === 'savings' && <View style={styles.radioSelected} />}
-                </View>
-                <Text style={styles.radioText}>Savings Account</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.radioOption}
-                onPress={() => setAccountType('current')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.radioCircle}>
-                  {accountType === 'current' && <View style={styles.radioSelected} />}
-                </View>
-                <Text style={styles.radioText}>Current Account</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* Help Text */}
-        <View style={styles.helpSection}>
-          <Text style={styles.helpText}>
-            💡 Find your IFSC code on your chequebook or bank passbook
-          </Text>
-        </View>
-
-        {/* Verify Button */}
-        <TouchableOpacity
-          onPress={verifyBankAccount}
-          disabled={!isFormComplete() || isVerifying}
-          activeOpacity={0.8}
-          style={styles.verifyButtonContainer}
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: canGoBack ? insets.top + 54 : insets.top + 24,
+              paddingBottom: Math.max(120, insets.bottom + 88),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={20}
+          keyboardShouldPersistTaps="handled"
         >
-          <LinearGradient
-            colors={
-              isFormComplete() && !isVerifying
-                ? ['#378BBB', '#4FC3F7']
-                : ['#1B2F48', '#1B2F48']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.verifyButton}
-          >
-            {isVerifying ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.verifyButtonText}>Verify & Save</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </KeyboardAwareScrollView>
-    </View>
+          <View style={styles.content}>
+            <View style={styles.titleSection}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="card-outline" size={30} color="#A855F7" />
+              </View>
+              <Text style={styles.title}>Payout Bank Details</Text>
+              <Text style={styles.subtitle}>
+                Enter your bank details to receive event payouts
+              </Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <Ionicons name="shield-checkmark" size={20} color="#A855F7" />
+                <Text style={styles.infoText}>
+                  Your account will be verified securely
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <GlowInput
+                iconName="person-outline"
+                placeholder="Account Holder Name"
+                value={accountHolderName}
+                onChangeText={setAccountHolderName}
+                autoCapitalize="words"
+              />
+
+              <GlowInput
+                iconName="card-outline"
+                placeholder="Account Number"
+                value={accountNumber}
+                onChangeText={setAccountNumber}
+                keyboardType="numeric"
+                maxLength={18}
+              />
+
+              <GlowInput
+                iconName="card-outline"
+                placeholder="Confirm Account Number"
+                value={confirmAccountNumber}
+                onChangeText={setConfirmAccountNumber}
+                keyboardType="numeric"
+                maxLength={18}
+              />
+              {confirmAccountNumber && accountNumber !== confirmAccountNumber && (
+                <Text style={styles.errorText}>Account numbers do not match</Text>
+              )}
+
+              <GlowInput
+                iconName="git-branch-outline"
+                placeholder="IFSC Code (e.g., SBIN0001234)"
+                value={ifscCode}
+                onChangeText={handleIfscChange}
+                autoCapitalize="characters"
+                maxLength={11}
+              />
+
+              <View style={styles.bankNameContainer}>
+                <View
+                  style={[styles.inputContainer, styles.disabledInputContainer]}
+                  pointerEvents="none"
+                >
+                  <Ionicons
+                    name="business-outline"
+                    size={20}
+                    color="rgba(255, 255, 255, 0.55)"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="Bank Name (Auto-filled)"
+                    value={bankName}
+                    editable={false}
+                    style={[styles.input, styles.disabledInput]}
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                  />
+                </View>
+                {isFetchingBank && (
+                  <View style={styles.fetchingIndicator}>
+                    <ActivityIndicator size="small" color="#06B6D4" />
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.accountTypeSection}>
+                <Text style={styles.accountTypeLabel}>Account Type</Text>
+                <View style={styles.radioGroup}>
+                  <TouchableOpacity
+                    style={[
+                      styles.radioOption,
+                      accountType === 'savings' && styles.radioOptionSelected,
+                    ]}
+                    onPress={() => setAccountType('savings')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.radioCircle}>
+                      {accountType === 'savings' && <View style={styles.radioSelected} />}
+                    </View>
+                    <Text style={styles.radioText}>Savings Account</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.radioOption,
+                      accountType === 'current' && styles.radioOptionSelected,
+                    ]}
+                    onPress={() => setAccountType('current')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.radioCircle}>
+                      {accountType === 'current' && <View style={styles.radioSelected} />}
+                    </View>
+                    <Text style={styles.radioText}>Current Account</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.helpSection}>
+              <Ionicons name="information-circle" size={20} color="#06B6D4" />
+              <Text style={styles.helpText}>
+                Find your IFSC code on your chequebook or bank passbook.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={verifyBankAccount}
+              disabled={!isFormComplete() || isVerifying}
+              activeOpacity={0.85}
+              style={styles.verifyButtonContainer}
+            >
+              <LinearGradient
+                colors={
+                  isFormComplete() && !isVerifying
+                    ? ['#8B2BE2', '#06B6D4']
+                    : ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.14)']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.verifyButton}
+              >
+                {isVerifying ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.verifyButtonText}>Verify & Save</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareScrollView>
+        <View
+          pointerEvents="none"
+          style={[styles.bottomNavGuard, { height: Math.max(insets.bottom + 20, 44) }]}
+        />
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
+  },
+  bottomNavGuard: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0D0B1E',
+    zIndex: 25,
   },
   header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    zIndex: 20,
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 10,
-    zIndex: 10,
-    backgroundColor: 'transparent',
+    paddingBottom: 8,
   },
   backButton: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
+    flex: 1,
     paddingHorizontal: 24,
+    paddingTop: 18,
   },
   contentWithHeader: {
     paddingTop: 100,
@@ -809,51 +852,53 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(139, 92, 246, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 20,
+    lineHeight: 24,
+    paddingHorizontal: 10,
   },
   infoCard: {
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 32,
+    padding: 16,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#233B57',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   infoText: {
+    flex: 1,
     fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#B8C7D9',
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.55)',
     marginLeft: 12,
+    lineHeight: 20,
   },
   formSection: {
     marginBottom: 24,
@@ -861,47 +906,59 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
+    height: 54,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(66, 66, 66, 0.7)',
+    borderColor: 'rgba(53, 53, 53, 0.22)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    opacity: 0.8,
+    elevation: 4,
     marginBottom: 16,
-    height: 56,
+  },
+  disabledInputContainer: {
+    borderColor: 'rgba(139, 92, 246, 0.20)',
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     paddingVertical: 0,
   },
   helpSection: {
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-  },
-  helpText: {
-    fontSize: 13,
-    fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
-    lineHeight: 20,
-  },
-  verifyButtonContainer: {
-    marginBottom: 40,
-  },
-  verifyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#1A1530',
     borderRadius: 16,
-    paddingVertical: 18,
-    gap: 10,
+    padding: 14,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+  },
+  helpText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 18,
+    marginLeft: 10,
+  },
+  verifyButtonContainer: {
+    marginBottom: 74,
+  },
+  verifyButton: {
+    height: 54,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   verifyButtonText: {
     fontSize: 17,
@@ -912,65 +969,70 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   disabledInput: {
-    color: '#7F93AA',
+    color: 'rgba(255, 255, 255, 0.55)',
   },
   fetchingIndicator: {
     position: 'absolute',
     right: 16,
-    top: 18,
+    top: 17,
   },
   accountTypeSection: {
-    marginTop: 8,
+    marginTop: 4,
   },
   accountTypeLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Medium',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
     marginBottom: 12,
   },
   radioGroup: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
   },
   radioOption: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: 'rgba(66, 66, 66, 0.7)',
+    borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: '#233B57',
+    borderWidth: 1,
+    borderColor: 'rgba(53, 53, 53, 0.22)',
+  },
+  radioOptionSelected: {
+    backgroundColor: 'rgba(139, 92, 246, 0.18)',
+    borderColor: '#8B2BE2',
   },
   radioCircle: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#378BBB',
+    borderColor: 'rgba(139, 92, 246, 0.80)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   radioSelected: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#378BBB',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#8B2BE2',
   },
   radioText: {
+    flex: 1,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
-    flex: 1,
   },
   errorText: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#FF5252',
-    marginTop: 6,
-    marginBottom: 12,
+    color: '#FF6B81',
+    marginTop: -8,
+    marginBottom: 14,
+    marginLeft: 4,
   },
 });
 
