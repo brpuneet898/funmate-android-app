@@ -25,7 +25,7 @@ import {
   StatusBar,
   Animated,
   ActivityIndicator,
-  Platform,
+  ImageBackground,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -91,7 +91,7 @@ const GlowInput: React.FC<GlowInputProps> = ({ iconName, ...inputProps }) => {
 
   const borderColor = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#233B57', '#378BBB'],
+    outputRange: ['rgba(139, 92, 246, 0.30)', 'rgba(139, 92, 246, 0.80)'],
   });
 
   return (
@@ -99,13 +99,13 @@ const GlowInput: React.FC<GlowInputProps> = ({ iconName, ...inputProps }) => {
       <Ionicons
         name={iconName as any}
         size={20}
-        color="#7F93AA"
+        color="rgba(255, 255, 255, 0.55)"
         style={styles.inputIcon}
       />
       <TextInput
         {...inputProps}
         style={styles.input}
-        placeholderTextColor="#7F93AA"
+        placeholderTextColor="rgba(255,255,255,0.35)"
         onFocus={handleFocus}
         onBlur={handleBlur}
       />
@@ -786,346 +786,539 @@ const MerchantVerificationScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
 
-      {canGoBack && (
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          canGoBack ? styles.contentWithHeader : styles.contentNoHeader,
-          { paddingBottom: Math.max(120, insets.bottom + 80) },
-        ]}
-        showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        extraScrollHeight={150}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title Section */}
-        <View style={styles.titleSection}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="shield-checkmark-outline" size={32} color="#378BBB" />
-          </View>
-          <Text style={styles.title}>Business Verification</Text>
-          <Text style={styles.subtitle}>
-            Verify your business credentials to start hosting events
-          </Text>
-        </View>
-
-        {/* Info Card */}
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={20} color="#378BBB" />
-          <Text style={styles.infoText}>
-            We use Digio API to verify your business documents securely. All data is encrypted.
-          </Text>
-        </View>
-
-        {/* GST Verification */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>GST Number</Text>
-            {gstVerified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
-            )}
-          </View>
-          <GlowInput
-            iconName="document-text-outline"
-            placeholder="22AAAAA0000A1Z5"
-            value={gstNumber}
-            onChangeText={(text) => setGstNumber(text.toUpperCase())}
-            maxLength={15}
-            autoCapitalize="characters"
-            editable={!gstVerified}
-          />
-          <TouchableOpacity
-            onPress={verifyGST}
-            disabled={gstVerified || isVerifyingGST || !gstNumber.trim()}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={
-                gstVerified
-                  ? ['#4CAF50', '#66BB6A']
-                  : gstNumber.trim() && !isVerifyingGST
-                  ? ['#378BBB', '#4FC3F7']
-                  : ['#1B2F48', '#1B2F48']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.verifyButton}
+        {canGoBack && (
+          <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              activeOpacity={0.7}
             >
-              {isVerifyingGST ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.verifyButtonText}>
-                  {gstVerified ? '✓ GST Verified' : 'Verify GST'}
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        {/* PAN Verification */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PAN Number</Text>
-            {panVerified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
-            )}
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
-          <GlowInput
-            iconName="card-outline"
-            placeholder="AAAAA9999A"
-            value={panNumber}
-            onChangeText={(text) => setPanNumber(text.toUpperCase())}
-            maxLength={10}
-            autoCapitalize="characters"
-            editable={!panVerified}
-          />
-          <TouchableOpacity
-            onPress={verifyPAN}
-            disabled={panVerified || isVerifyingPAN || !panNumber.trim() || !gstVerified}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={
-                panVerified
-                  ? ['#4CAF50', '#66BB6A']
-                  : panNumber.trim() && gstVerified && !isVerifyingPAN
-                  ? ['#378BBB', '#4FC3F7']
-                  : ['#1B2F48', '#1B2F48']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.verifyButton}
-            >
-              {isVerifyingPAN ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.verifyButtonText}>
-                  {panVerified ? '✓ PAN Verified' : 'Verify PAN'}
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-          {!gstVerified && (
-            <Text style={styles.helperText}>Verify GST first</Text>
-          )}
-        </View>
+        )}
 
-        {/* Business License Verification */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Business License</Text>
-            {licenseVerified && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
-                <Text style={styles.verifiedText}>Verified</Text>
-              </View>
-            )}
-          </View>
-          <GlowInput
-            iconName="newspaper-outline"
-            placeholder="License Number"
-            value={licenseNumber}
-            onChangeText={setLicenseNumber}
-            maxLength={50}
-            editable={!licenseVerified}
-          />
-          
-          {/* File Upload */}
-          <TouchableOpacity
-            onPress={pickLicenseDocument}
-            disabled={licenseVerified}
-            activeOpacity={0.7}
-            style={styles.uploadButton}
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: canGoBack ? insets.top + 54 : 0,
+              paddingBottom: Math.max(32, insets.bottom + 20),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={120}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View
+            style={[
+              styles.content,
+              !canGoBack && { paddingTop: insets.top + 32 },
+            ]}
           >
-            <Ionicons
-              name={licenseFile ? 'document-attach' : 'cloud-upload-outline'}
-              size={24}
-              color={licenseFile ? '#4CAF50' : '#7F93AA'}
-            />
-            <View style={styles.uploadTextContainer}>
-              <Text style={styles.uploadButtonText}>
-                {licenseFile ? licenseFile.name : 'Upload License Photo'}
+            <Text style={styles.title}>Business Verification</Text>
+            <Text style={styles.subtitle}>
+              Verify your business credentials to start hosting events and receive payouts
+            </Text>
+
+            <View style={styles.infoCard}>
+              <Ionicons name="shield-checkmark" size={22} color="#A855F7" />
+              <Text style={styles.infoText}>
+                We use Digio API to verify your business documents securely. All data is encrypted.
               </Text>
-              {licenseFile && (
-                <Text style={styles.uploadSizeText}>
-                  {(licenseFile.size / 1024).toFixed(0)} KB
-                </Text>
+            </View>
+
+            {/* GST Verification */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>GST Number</Text>
+                {gstVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+                )}
+              </View>
+              <GlowInput
+                iconName="document-text-outline"
+                placeholder="22AAAAA0000A1Z5"
+                value={gstNumber}
+                onChangeText={(text) => setGstNumber(text.toUpperCase())}
+                maxLength={15}
+                autoCapitalize="characters"
+                editable={!gstVerified}
+              />
+              <TouchableOpacity
+                onPress={verifyGST}
+                disabled={gstVerified || isVerifyingGST || !gstNumber.trim()}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={
+                    gstVerified
+                      ? ['#4CAF50', '#66BB6A']
+                      : gstNumber.trim() && !isVerifyingGST
+                      ? ['#8B2BE2', '#06B6D4']
+                      : ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.14)']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.verifyButton}
+                >
+                  {isVerifyingGST ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>
+                      {gstVerified ? 'Completed' : 'Verify GST'}
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* PAN Verification */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>PAN Number</Text>
+                {panVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+                )}
+              </View>
+              <GlowInput
+                iconName="card-outline"
+                placeholder="AAAAA9999A"
+                value={panNumber}
+                onChangeText={(text) => setPanNumber(text.toUpperCase())}
+                maxLength={10}
+                autoCapitalize="characters"
+                editable={!panVerified}
+              />
+              <TouchableOpacity
+                onPress={verifyPAN}
+                disabled={panVerified || isVerifyingPAN || !panNumber.trim() || !gstVerified}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={
+                    panVerified
+                      ? ['#4CAF50', '#66BB6A']
+                      : panNumber.trim() && gstVerified && !isVerifyingPAN
+                      ? ['#8B2BE2', '#06B6D4']
+                      : ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.14)']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.verifyButton}
+                >
+                  {isVerifyingPAN ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>
+                      {panVerified ? 'Completed' : 'Verify PAN'}
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+              {!gstVerified && (
+                <Text style={styles.helperText}>Verify GST first</Text>
               )}
             </View>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={verifyLicense}
-            disabled={
-              licenseVerified ||
-              isVerifyingLicense ||
-              !licenseNumber.trim() ||
-              !licenseFile ||
-              !gstVerified ||
-              !panVerified
-            }
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={
-                licenseVerified
-                  ? ['#4CAF50', '#66BB6A']
-                  : licenseNumber.trim() &&
-                    licenseFile &&
-                    gstVerified &&
-                    panVerified &&
-                    !isVerifyingLicense
-                  ? ['#378BBB', '#4FC3F7']
-                  : ['#1B2F48', '#1B2F48']
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.verifyButton}
-            >
-              {isVerifyingLicense ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.verifyButtonText}>
-                  {licenseVerified ? '✓ License Verified' : 'Upload & Verify License'}
-                </Text>
+            {/* Business License Verification */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Business License</Text>
+                {licenseVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+                )}
+              </View>
+              <GlowInput
+                iconName="newspaper-outline"
+                placeholder="License Number"
+                value={licenseNumber}
+                onChangeText={setLicenseNumber}
+                maxLength={50}
+                editable={!licenseVerified}
+              />
+
+              <TouchableOpacity
+                onPress={pickLicenseDocument}
+                disabled={licenseVerified}
+                activeOpacity={0.7}
+                style={styles.uploadButton}
+              >
+                <Ionicons
+                  name={licenseFile ? 'document-attach' : 'cloud-upload-outline'}
+                  size={24}
+                  color={licenseFile ? '#A855F7' : 'rgba(255, 255, 255, 0.55)'}
+                />
+                <View style={styles.uploadTextContainer}>
+                  <Text style={styles.uploadButtonText}>
+                    {licenseFile ? licenseFile.name : 'Upload License Photo'}
+                  </Text>
+                  {licenseFile && (
+                    <Text style={styles.uploadSizeText}>
+                      {(licenseFile.size / 1024).toFixed(0)} KB
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={verifyLicense}
+                disabled={
+                  licenseVerified ||
+                  isVerifyingLicense ||
+                  !licenseNumber.trim() ||
+                  !licenseFile ||
+                  !gstVerified ||
+                  !panVerified
+                }
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={
+                    licenseVerified
+                      ? ['#4CAF50', '#66BB6A']
+                      : licenseNumber.trim() &&
+                        licenseFile &&
+                        gstVerified &&
+                        panVerified &&
+                        !isVerifyingLicense
+                      ? ['#8B2BE2', '#06B6D4']
+                      : ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.14)']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.verifyButton}
+                >
+                  {isVerifyingLicense ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>
+                      {licenseVerified ? 'Completed' : 'Upload & Verify License'}
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+              {(!gstVerified || !panVerified) && (
+                <Text style={styles.helperText}>Complete GST and PAN verification first</Text>
               )}
-            </LinearGradient>
-          </TouchableOpacity>
-          {(!gstVerified || !panVerified) && (
-            <Text style={styles.helperText}>Complete GST and PAN verification first</Text>
-          )}
-        </View>
+            </View>
 
-        {/* Continue Button */}
-        <TouchableOpacity
-          onPress={handleContinue}
-          disabled={!isFormComplete() || isSaving}
-          activeOpacity={0.8}
-          style={styles.continueButtonContainer}
-        >
-          <LinearGradient
-            colors={
-              isFormComplete() && !isSaving
-                ? ['#378BBB', '#4FC3F7']
-                : ['#1B2F48', '#1B2F48']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.continueButton}
-          >
-            {isSaving ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.continueButtonText}>Continue</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </KeyboardAwareScrollView>
-    </View>
+            <TouchableOpacity
+              onPress={handleContinue}
+              disabled={!isFormComplete() || isSaving}
+              activeOpacity={0.85}
+              style={styles.continueButtonContainer}
+            >
+              <LinearGradient
+                colors={
+                  isFormComplete() && !isSaving
+                    ? ['#8B2BE2', '#06B6D4']
+                    : ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.14)']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.continueButton}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.continueButtonText}>Continue</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAwareScrollView>
+      </View>
+    </ImageBackground>
   );
 };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#0E1621',
+//   },
+//   header: {
+//     position: 'absolute',
+//     top: 0,
+//     left: 0,
+//     right: 0,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 20,
+//     paddingTop: 50,
+//     paddingBottom: 10,
+//     zIndex: 10,
+//     backgroundColor: 'transparent',
+//   },
+//   backButton: {
+//     padding: 8,
+//   },
+//   scrollView: {
+//     flex: 1,
+//   },
+//   content: {
+//     paddingHorizontal: 24,
+//   },
+//   contentWithHeader: {
+//     paddingTop: 100,
+//   },
+//   contentNoHeader: {
+//     paddingTop: 60,
+//   },
+//   titleSection: {
+//     alignItems: 'center',
+//     marginBottom: 24,
+//   },
+//   iconCircle: {
+//     width: 72,
+//     height: 72,
+//     borderRadius: 36,
+//     backgroundColor: 'rgba(55, 139, 187, 0.1)',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     marginBottom: 16,
+//   },
+//   title: {
+//     fontSize: 28,
+//     fontFamily: 'Inter-Bold',
+//     color: '#FFFFFF',
+//     marginBottom: 8,
+//     textAlign: 'center',
+//   },
+//   subtitle: {
+//     fontSize: 15,
+//     fontFamily: 'Inter-Regular',
+//     color: '#B8C7D9',
+//     textAlign: 'center',
+//     lineHeight: 22,
+//     paddingHorizontal: 20,
+//   },
+//   infoCard: {
+//     flexDirection: 'row',
+//     backgroundColor: 'rgba(55, 139, 187, 0.1)',
+//     borderRadius: 12,
+//     padding: 16,
+//     marginBottom: 28,
+//     borderWidth: 1,
+//     borderColor: 'rgba(55, 139, 187, 0.2)',
+//   },
+//   infoText: {
+//     flex: 1,
+//     fontSize: 13,
+//     fontFamily: 'Inter-Regular',
+//     color: '#B8C7D9',
+//     lineHeight: 19,
+//     marginLeft: 12,
+//   },
+//   section: {
+//     marginBottom: 32,
+//   },
+//   sectionHeader: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     alignItems: 'center',
+//     marginBottom: 12,
+//   },
+//   sectionTitle: {
+//     fontSize: 17,
+//     fontFamily: 'Inter-SemiBold',
+//     color: '#FFFFFF',
+//   },
+//   verifiedBadge: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(76, 175, 80, 0.1)',
+//     paddingHorizontal: 10,
+//     paddingVertical: 4,
+//     borderRadius: 12,
+//     gap: 4,
+//   },
+//   verifiedText: {
+//     fontSize: 13,
+//     fontFamily: 'Inter-Medium',
+//     color: '#4CAF50',
+//   },
+//   inputContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#1B2F48',
+//     borderRadius: 12,
+//     borderWidth: 2,
+//     paddingHorizontal: 16,
+//     marginBottom: 12,
+//     minHeight: 56,
+//   },
+//   inputIcon: {
+//     marginRight: 12,
+//   },
+//   input: {
+//     flex: 1,
+//     fontSize: 15,
+//     fontFamily: 'Inter-Medium',
+//     color: '#FFFFFF',
+//     paddingVertical: 0,
+//   },
+//   verifyButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     borderRadius: 12,
+//     paddingVertical: 14,
+//     marginBottom: 8,
+//   },
+//   verifyButtonText: {
+//     fontSize: 15,
+//     fontFamily: 'Inter-SemiBold',
+//     color: '#FFFFFF',
+//   },
+//   helperText: {
+//     fontSize: 13,
+//     fontFamily: 'Inter-Regular',
+//     color: '#7F93AA',
+//     marginTop: 4,
+//   },
+//   uploadButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#1B2F48',
+//     borderRadius: 12,
+//     borderWidth: 2,
+//     borderColor: '#233B57',
+//     borderStyle: 'dashed',
+//     paddingHorizontal: 16,
+//     paddingVertical: 16,
+//     marginBottom: 12,
+//   },
+//   uploadTextContainer: {
+//     flex: 1,
+//     marginLeft: 12,
+//   },
+//   uploadButtonText: {
+//     fontSize: 15,
+//     fontFamily: 'Inter-Medium',
+//     color: '#FFFFFF',
+//   },
+//   uploadSizeText: {
+//     fontSize: 12,
+//     fontFamily: 'Inter-Regular',
+//     color: '#7F93AA',
+//     marginTop: 2,
+//   },
+//   continueButtonContainer: {
+//     marginBottom: 40,
+//   },
+//   continueButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     borderRadius: 16,
+//     paddingVertical: 18,
+//     gap: 10,
+//   },
+//   continueButtonText: {
+//     fontSize: 17,
+//     fontFamily: 'Inter-SemiBold',
+//     color: '#FFFFFF',
+//   },
+// });
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    zIndex: 20,
     paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 10,
-    zIndex: 10,
-    backgroundColor: 'transparent',
+    paddingBottom: 8,
   },
   backButton: {
-    padding: 8,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-  },
-  contentWithHeader: {
-    paddingTop: 100,
-  },
-  contentNoHeader: {
-    paddingTop: 60,
-  },
-  titleSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    paddingTop: 18,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 20,
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 24,
+    marginBottom: 24,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
-    borderRadius: 12,
+    alignItems: 'flex-start',
+    backgroundColor: '#1A1530',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 28,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   infoText: {
     flex: 1,
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
-    lineHeight: 19,
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 18,
     marginLeft: 12,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1134,14 +1327,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    backgroundColor: 'rgba(76, 175, 80, 0.10)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1155,49 +1348,56 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingHorizontal: 16,
+    height: 54,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(66, 66, 66, 0.7)',
+    borderColor: 'rgba(53, 53, 53, 0.22)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    opacity: 0.8,
+    elevation: 4,
     marginBottom: 12,
-    minHeight: 56,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
     paddingVertical: 0,
   },
   verifyButton: {
-    flexDirection: 'row',
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    paddingVertical: 14,
     marginBottom: 8,
   },
   verifyButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   helperText: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255, 255, 255, 0.55)',
     marginTop: 4,
+    marginLeft: 4,
   },
   uploadButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#233B57',
+    backgroundColor: '#1A1530',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     borderStyle: 'dashed',
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -1215,19 +1415,18 @@ const styles = StyleSheet.create({
   uploadSizeText: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#7F93AA',
+    color: 'rgba(255, 255, 255, 0.55)',
     marginTop: 2,
   },
   continueButtonContainer: {
-    marginBottom: 40,
+    marginTop: 4,
+    marginBottom: 60,
   },
   continueButton: {
-    flexDirection: 'row',
+    height: 54,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    paddingVertical: 18,
-    gap: 10,
   },
   continueButtonText: {
     fontSize: 17,
