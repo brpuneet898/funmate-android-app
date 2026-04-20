@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   Image,
   TextInput,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import LinearGradient from 'react-native-linear-gradient';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -145,7 +147,7 @@ const HostEventsScreen = () => {
             <Image source={{ uri: bannerUri }} style={styles.bannerImage} resizeMode="cover" />
           ) : (
             <View style={styles.bannerPlaceholder}>
-              <Ionicons name="image-outline" size={36} color="#2E4A63" />
+              <Ionicons name="image-outline" size={36} color="rgba(255,255,255,0.25)" />
             </View>
           )}
           {/* status badge over banner */}
@@ -162,7 +164,7 @@ const HostEventsScreen = () => {
           {/* date */}
           {!!item.startTime && (
             <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={14} color="#506A85" />
+              <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.55)" />
               <Text style={styles.infoText}>{formatEventDate(item.startTime)}</Text>
             </View>
           )}
@@ -170,7 +172,7 @@ const HostEventsScreen = () => {
           {/* location */}
           {!!item.location && (
             <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={14} color="#506A85" />
+              <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.55)" />
               <Text style={styles.infoText} numberOfLines={1}>{item.location}</Text>
             </View>
           )}
@@ -178,7 +180,7 @@ const HostEventsScreen = () => {
           {/* tickets + revenue row */}
           <View style={styles.statsRow}>
             <View style={styles.statChip}>
-              <Ionicons name="ticket-outline" size={13} color="#378BBB" />
+              <Ionicons name="ticket-outline" size={13} color="#06B6D4" />
               <Text style={styles.statText}>{ticketsText}</Text>
             </View>
             {!isFree && (
@@ -189,7 +191,7 @@ const HostEventsScreen = () => {
             )}
             {isFree && (
               <View style={styles.statChip}>
-                <Ionicons name="gift-outline" size={13} color="#378BBB" />
+                <Ionicons name="gift-outline" size={13} color="#06B6D4" />
                 <Text style={styles.statText}>Free Event</Text>
               </View>
             )}
@@ -198,14 +200,21 @@ const HostEventsScreen = () => {
           {/* Manage button */}
           <TouchableOpacity
             style={styles.manageButton}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('ManageEvent', {
               eventId: item.id,
               eventTitle: item.title,
               eventStatus: item.status,
             })}
           >
-            <Text style={styles.manageButtonText}>Manage</Text>
+            <LinearGradient
+              colors={['#8B2BE2', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.manageButtonGradient}
+            >
+              <Text style={styles.manageButtonText}>Manage</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -215,7 +224,7 @@ const HostEventsScreen = () => {
   const renderEmpty = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconWrap}>
-        <Ionicons name="calendar-outline" size={48} color="#378BBB" />
+        <Ionicons name="calendar-outline" size={48} color="#06B6D4" />
       </View>
       <Text style={styles.emptyTitle}>No Events Found</Text>
       <Text style={styles.emptySubtitle}>
@@ -224,22 +233,35 @@ const HostEventsScreen = () => {
           : 'Create your first event and start selling tickets.'}
       </Text>
       {!searchText && activeFilter === 'all' && (
-        <TouchableOpacity
-          style={styles.emptyCreateBtn}
-          onPress={() => navigation.navigate('CreateEventStep1')}
-          activeOpacity={0.85}
+      <TouchableOpacity
+        style={styles.emptyCreateBtn}
+        onPress={() => navigation.navigate('CreateEventStep1')}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={['#8B2BE2', '#06B6D4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.emptyCreateBtnGradient}
         >
           <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
           <Text style={styles.emptyCreateText}>Create First Event</Text>
-        </TouchableOpacity>
+        </LinearGradient>
+      </TouchableOpacity>
       )}
     </View>
   );
 
   // ── JSX ───────────────────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -256,18 +278,18 @@ const HostEventsScreen = () => {
 
       {/* ── Search Bar ── */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#506A85" style={styles.searchIcon} />
+        <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.55)" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search events…"
-          placeholderTextColor="#506A85"
+          placeholderTextColor="rgba(255,255,255,0.35)"
           value={searchText}
           onChangeText={setSearchText}
           returnKeyType="search"
         />
         {searchText.length > 0 && (
           <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close-circle" size={18} color="#506A85" />
+            <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.55)" />
           </TouchableOpacity>
         )}
       </View>
@@ -292,7 +314,7 @@ const HostEventsScreen = () => {
       {/* ── List ── */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#378BBB" />
+          <ActivityIndicator size="large" color="#8B2BE2" />
           <Text style={styles.loadingText}>Loading events…</Text>
         </View>
       ) : (
@@ -303,6 +325,7 @@ const HostEventsScreen = () => {
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={[
             styles.listContent,
+            { paddingBottom: Math.max(24, insets.bottom + 16) },
             filtered.length === 0 && styles.listContentEmpty,
           ]}
           showsVerticalScrollIndicator={false}
@@ -310,83 +333,113 @@ const HostEventsScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#378BBB']}
-              tintColor="#378BBB"
-              progressBackgroundColor="#1B2F48"
+              colors={['#8B2BE2']}
+              tintColor="#8B2BE2"
+              progressBackgroundColor="#1A1530"
             />
           }
         />
       )}
     </View>
+    </ImageBackground>
   );
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
+  container: {
+    flex: 1,
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
+  },
 
   // header
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 14, backgroundColor: '#0E1621',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: '#0d0b1e00',
   },
-  headerTitle: { fontSize: 28, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
+  headerTitle: { fontSize: 32, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
   createButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#FF4D6D', borderRadius: 22,
-    paddingHorizontal: 14, paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   createButtonText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 
   // search
   searchContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 16, marginBottom: 12,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12, borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
-    paddingHorizontal: 12, paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 14,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 16,
+    height: 54,
   },
-  searchIcon: { marginRight: 8 },
+  searchIcon: { marginRight: 10 },
   searchInput: {
-    flex: 1, fontSize: 14, fontFamily: 'Inter-Regular', color: '#FFFFFF', padding: 0,
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: '#FFFFFF',
+    padding: 0,
   },
-
   // chips
   chipRow: {
     flexDirection: 'row', gap: 8,
     paddingHorizontal: 16, marginBottom: 16,
   },
   chip: {
-    paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.25)',
-    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   chipActive: {
-    backgroundColor: '#FF4D6D', borderColor: '#FF4D6D',
+    backgroundColor: 'rgba(139,92,246,0.18)',
+    borderColor: '#8B2BE2',
   },
-  chipText: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: '#506A85' },
+  chipText: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: 'rgba(255,255,255,0.55)' },
   chipTextActive: { color: '#FFFFFF' },
 
   // loading / list
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#506A85' },
+  loadingText: { fontSize: 15, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)' },
   listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
   listContentEmpty: { flexGrow: 1 },
 
   // card
   card: {
-    backgroundColor: '#1B2F48', borderRadius: 18,
+    backgroundColor: '#1A1530',
+    borderRadius: 18,
     overflow: 'hidden',
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.18)',
   },
-  bannerContainer: { position: 'relative', height: 160, backgroundColor: '#132232' },
+  bannerContainer: { position: 'relative', height: 160, backgroundColor: '#16112B' },
   bannerImage: { width: '100%', height: '100%' },
   bannerPlaceholder: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#132232',
+    backgroundColor: '#16112B',
   },
   statusBadge: {
     position: 'absolute', top: 10, right: 10,
@@ -397,39 +450,67 @@ const styles = StyleSheet.create({
   cardBody: { padding: 16, gap: 8 },
   cardTitle: { fontSize: 17, fontFamily: 'Inter-Bold', color: '#FFFFFF', lineHeight: 23 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoText: { fontSize: 13, fontFamily: 'Inter-Regular', color: '#B8C7D9', flex: 1 },
+  infoText: { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', flex: 1 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
   statChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(55,139,187,0.1)',
-    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.16)',
   },
-  statText: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#B8C7D9' },
+  statText: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
   manageButton: {
-    marginTop: 4,
-    borderWidth: 1.5, borderColor: '#378BBB',
-    borderRadius: 10, paddingVertical: 10,
-    alignItems: 'center', justifyContent: 'center',
+    marginTop: 6,
+    borderRadius: 30,
+    overflow: 'hidden',
   },
-  manageButtonText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#378BBB' },
+  manageButtonGradient: {
+    height: 54,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageButtonText: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 
   // empty
   emptyState: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
   emptyIconWrap: {
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: 'rgba(55,139,187,0.1)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(55,139,187,0.2)',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    opacity: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   emptyTitle: { fontSize: 22, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
   emptySubtitle: {
-    fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9',
-    textAlign: 'center', lineHeight: 22,
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   emptyCreateBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#FF4D6D', borderRadius: 14,
-    paddingVertical: 14, paddingHorizontal: 28, marginTop: 8,
+    marginTop: 8,
+    borderRadius: 30,
+    overflow: 'hidden',
+  },
+  emptyCreateBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 54,
+    paddingHorizontal: 28,
+    borderRadius: 30,
   },
   emptyCreateText: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 });
