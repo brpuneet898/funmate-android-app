@@ -7,6 +7,7 @@ import {
   StatusBar,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -270,219 +271,234 @@ const HostDashboardScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#378BBB" />
+        <ActivityIndicator size="large" color="#8B2BE2" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-      
-      {/* Header with Gradient */}
-      <LinearGradient
-        colors={['#1B2F48', '#0E1621']}
-        style={[styles.header, { paddingTop: insets.top + 20 }]}
-      >
-        <View style={styles.greetingContainer}>
-          <View style={styles.greetingTextContainer}>
-            <Text style={styles.greetingText}>{greeting},</Text>
-            <Text style={styles.nameText}>{userName} 👋</Text>
-          </View>
-          <View style={styles.iconCircle}>
-            <Ionicons name="storefront" size={28} color="#378BBB" />
-          </View>
-        </View>
-      </LinearGradient>
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      {/* Content */}
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#378BBB']}
-            tintColor="#378BBB"
-            progressBackgroundColor="#1B2F48"
-          />
-        }
-      >
-        <View style={styles.welcomeCard}>
-          <View style={styles.welcomeIconCircle}>
-            <Ionicons name="rocket-outline" size={40} color="#378BBB" />
+        {/* Header */}
+        <LinearGradient
+          colors={['rgba(139, 43, 226, 0.22)', 'rgba(6, 182, 212, 0.10)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.header, { paddingTop: insets.top + 20 }]}
+        >
+          <View style={styles.greetingContainer}>
+            <View style={styles.greetingTextContainer}>
+              <Text style={styles.greetingText}>{greeting},</Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.nameText}>{userName}</Text>
+                {/* <Ionicons name="hand-left-outline" size={20} color="#06B6D4" style={styles.nameIcon} /> */}
+              </View>
+            </View>
+            {/* <View style={styles.iconCircle}>
+              <Ionicons name="storefront" size={28} color="#8B2BE2" />
+            </View> */}
           </View>
-          <Text style={styles.welcomeTitle}>Welcome to Your Dashboard!</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Manage your events, track earnings, and grow your business all in one place.
-          </Text>
-        </View>
+        </LinearGradient>
 
-        {/* Stats Grid */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Quick Stats</Text>
-          
-          <View style={styles.statsGrid}>
-            {loadingStats ? (
-              // Loading skeleton
+        {/* Content */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingBottom: Math.max(24, insets.bottom + 16) }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#8B2BE2']}
+              tintColor="#8B2BE2"
+              progressBackgroundColor="#1A1530"
+            />
+          }
+        >
+          <View style={styles.welcomeCard}>
+            <View style={styles.welcomeIconCircle}>
+              <Ionicons name="rocket-outline" size={40} color="#8B2BE2" />
+            </View>
+            <Text style={styles.welcomeTitle}>Welcome to Your Dashboard!</Text>
+            <Text style={styles.welcomeSubtitle}>
+              Manage your events, track earnings, and grow your business all in one place.
+            </Text>
+          </View>
+
+          <View style={styles.statsContainer}>
+            <Text style={styles.sectionTitle}>Quick Stats</Text>
+
+            <View style={styles.statsGrid}>
+              {loadingStats ? (
+                <>
+                  {[1, 2, 3, 4, 5, 6].map((index) => (
+                    <View key={index} style={[styles.statCard, styles.statCardLoading]}>
+                      <View style={styles.loadingIconCircle} />
+                      <View style={styles.loadingValueLine} />
+                      <View style={styles.loadingLabelLine} />
+                    </View>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="calendar-outline" size={24} color="#8B2BE2" />
+                    </View>
+                    <Text style={styles.statValue}>{stats.upcomingEvents}</Text>
+                    <Text style={styles.statLabel}>Upcoming Events</Text>
+                  </View>
+
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="calendar" size={24} color="#06B6D4" />
+                    </View>
+                    <Text style={styles.statValue}>{stats.totalEvents}</Text>
+                    <Text style={styles.statLabel}>Total Events</Text>
+                  </View>
+
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="ticket-outline" size={24} color="#8B2BE2" />
+                    </View>
+                    <Text style={styles.statValue}>{stats.ticketsSold}</Text>
+                    <Text style={styles.statLabel}>Tickets Sold</Text>
+                  </View>
+
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="trending-up" size={24} color="#06B6D4" />
+                    </View>
+                    <Text style={styles.statValue}>₹{stats.grossRevenue.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLabel}>Gross Revenue</Text>
+                  </View>
+
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="time-outline" size={24} color="#A855F7" />
+                    </View>
+                    <Text style={styles.statValue}>₹{stats.pendingPayout.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLabel}>Pending Payout</Text>
+                  </View>
+
+                  <View style={styles.statCard}>
+                    <View style={styles.statIconCircle}>
+                      <Ionicons name="checkmark-circle" size={24} color="#22C55E" />
+                    </View>
+                    <Text style={styles.statValue}>₹{stats.completedPayouts.toLocaleString('en-IN')}</Text>
+                    <Text style={styles.statLabel}>Completed Payouts</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.activityContainer}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+
+            {loadingActivity ? (
               <>
-                {[1, 2, 3, 4, 5, 6].map((index) => (
-                  <View key={index} style={[styles.statCard, styles.statCardLoading]}>
-                    <View style={styles.loadingIconCircle} />
-                    <View style={styles.loadingValueLine} />
-                    <View style={styles.loadingLabelLine} />
+                {[1, 2, 3].map((index) => (
+                  <View key={index} style={[styles.activityRow, styles.activityRowLoading]}>
+                    <View style={styles.activityIconLoading} />
+                    <View style={styles.activityContentLoading}>
+                      <View style={styles.activityTitleLoading} />
+                      <View style={styles.activityTimeLoading} />
+                    </View>
+                    <View style={styles.activityAmountLoading} />
                   </View>
                 ))}
               </>
-            ) : (
-              <>
-                {/* Row 1 */}
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="calendar-outline" size={24} color="#378BBB" />
-                  </View>
-                  <Text style={styles.statValue}>{stats.upcomingEvents}</Text>
-                  <Text style={styles.statLabel}>Upcoming Events</Text>
+            ) : recentActivity.length === 0 ? (
+              <View style={styles.emptyActivity}>
+                <View style={{ opacity: 0.3 }}>
+                  <Ionicons name="receipt-outline" size={40} color="#8B2BE2" />
                 </View>
-                
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="calendar" size={24} color="#378BBB" />
-                  </View>
-                  <Text style={styles.statValue}>{stats.totalEvents}</Text>
-                  <Text style={styles.statLabel}>Total Events</Text>
-                </View>
-                
-                {/* Row 2 */}
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="ticket-outline" size={24} color="#378BBB" />
-                  </View>
-                  <Text style={styles.statValue}>{stats.ticketsSold}</Text>
-                  <Text style={styles.statLabel}>Tickets Sold</Text>
-                </View>
-                
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="trending-up" size={24} color="#378BBB" />
-                  </View>
-                  <Text style={styles.statValue}>₹{stats.grossRevenue.toLocaleString('en-IN')}</Text>
-                  <Text style={styles.statLabel}>Gross Revenue</Text>
-                </View>
-                
-                {/* Row 3 */}
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="time-outline" size={24} color="#FF9500" />
-                  </View>
-                  <Text style={styles.statValue}>₹{stats.pendingPayout.toLocaleString('en-IN')}</Text>
-                  <Text style={styles.statLabel}>Pending Payout</Text>
-                </View>
-                
-                <View style={styles.statCard}>
-                  <View style={styles.statIconCircle}>
-                    <Ionicons name="checkmark-circle" size={24} color="#34C759" />
-                  </View>
-                  <Text style={styles.statValue}>₹{stats.completedPayouts.toLocaleString('en-IN')}</Text>
-                  <Text style={styles.statLabel}>Completed Payouts</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.activityContainer}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          
-          {loadingActivity ? (
-            // Loading skeleton
-            <>
-              {[1, 2, 3].map((index) => (
-                <View key={index} style={[styles.activityRow, styles.activityRowLoading]}>
-                  <View style={styles.activityIconLoading} />
-                  <View style={styles.activityContentLoading}>
-                    <View style={styles.activityTitleLoading} />
-                    <View style={styles.activityTimeLoading} />
-                  </View>
-                  <View style={styles.activityAmountLoading} />
-                </View>
-              ))}
-            </>
-          ) : recentActivity.length === 0 ? (
-            // Empty state
-            <View style={styles.emptyActivity}>
-              <View style={{ opacity: 0.3 }}>
-                <Ionicons name="receipt-outline" size={40} color="#378BBB" />
+                <Text style={styles.emptyActivityText}>No recent activity yet</Text>
+                <Text style={styles.emptyActivitySubtext}>Your financial activity will appear here</Text>
               </View>
-              <Text style={styles.emptyActivityText}>No recent activity yet</Text>
-              <Text style={styles.emptyActivitySubtext}>Your financial activity will appear here</Text>
-            </View>
-          ) : (
-            // Activity list
-            recentActivity.map((activity) => {
-              const isCredit = activity.type === 'credit';
-              const icon = activity.source === 'booking' 
-                ? 'ticket-outline' 
-                : activity.source === 'settlement' 
-                ? 'wallet-outline' 
-                : 'arrow-undo-outline';
-              const iconColor = activity.source === 'settlement' 
-                ? '#34C759' 
-                : activity.source === 'refund' 
-                ? '#FF9500' 
-                : '#378BBB';
+            ) : (
+              recentActivity.map((activity) => {
+                const isCredit = activity.type === 'credit';
+                const icon = activity.source === 'booking'
+                  ? 'ticket-outline'
+                  : activity.source === 'settlement'
+                  ? 'wallet-outline'
+                  : 'arrow-undo-outline';
+                const iconColor = activity.source === 'settlement'
+                  ? '#22C55E'
+                  : activity.source === 'refund'
+                  ? '#A855F7'
+                  : '#8B2BE2';
 
-              return (
-                <View key={activity.id} style={styles.activityRow}>
-                  <View style={[styles.activityIcon, { backgroundColor: `${iconColor}20` }]}>
-                    <Ionicons name={icon} size={20} color={iconColor} />
-                  </View>
-                  <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>{activity.description}</Text>
-                    <Text style={styles.activityTime}>
-                      {activity.createdAt?.toDate().toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                return (
+                  <View key={activity.id} style={styles.activityRow}>
+                    <View style={[styles.activityIcon, { backgroundColor: `${iconColor}20` }]}>
+                      <Ionicons name={icon} size={20} color={iconColor} />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityTitle}>{activity.description}</Text>
+                      <Text style={styles.activityTime}>
+                        {activity.createdAt?.toDate().toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.activityAmount,
+                        { color: isCredit ? '#22C55E' : '#FF5252' }
+                      ]}
+                    >
+                      {isCredit ? '+' : '-'}₹{activity.amount.toLocaleString('en-IN')}
                     </Text>
                   </View>
-                  <Text style={[
-                    styles.activityAmount,
-                    { color: isCredit ? '#34C759' : '#FF5252' }
-                  ]}>
-                    {isCredit ? '+' : '-'}₹{activity.amount.toLocaleString('en-IN')}
-                  </Text>
-                </View>
-              );
-            })
-          )}
-        </View>
-      </ScrollView>
-    </View>
+                );
+              })
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   header: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    marginHorizontal: 10,
+    marginTop: 50,
+    marginBottom: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    // paddingTop: 20,
+    borderRadius: 24,
+    backgroundColor: 'rgba(26, 21, 48, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.22)',
   },
   greetingContainer: {
     flexDirection: 'row',
@@ -491,11 +507,12 @@ const styles = StyleSheet.create({
   },
   greetingTextContainer: {
     flex: 1,
+    paddingRight: 12,
   },
   greetingText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
     marginBottom: 4,
   },
   nameText: {
@@ -507,47 +524,50 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(55, 139, 187, 0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   welcomeCard: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 16,
+    backgroundColor: 'rgba(26, 21, 48, 0.82)',
+    borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   welcomeIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   welcomeTitle: {
     fontSize: 22,
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: 'center',
   },
   welcomeSubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -558,7 +578,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -568,18 +588,19 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: '#1B2F48',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: 'rgba(26, 21, 48, 0.82)',
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   statIconCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(55, 139, 187, 0.1)',
+    backgroundColor: 'rgba(139, 92, 246, 0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -589,12 +610,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
+    textAlign: 'center',
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
+    lineHeight: 16,
   },
   statCardLoading: {
     opacity: 0.5,
@@ -603,34 +626,34 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
     marginBottom: 12,
   },
   loadingValueLine: {
     width: 60,
     height: 24,
     borderRadius: 4,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
     marginBottom: 4,
   },
   loadingLabelLine: {
     width: 80,
     height: 12,
     borderRadius: 4,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
   },
   activityContainer: {
-    marginBottom: 24,
+    marginBottom: 8,
   },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: 'rgba(26, 21, 48, 0.82)',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   activityIcon: {
     width: 40,
@@ -652,7 +675,7 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
   },
   activityAmount: {
     fontSize: 16,
@@ -665,7 +688,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
     marginRight: 12,
   },
   activityContentLoading: {
@@ -675,28 +698,28 @@ const styles = StyleSheet.create({
     width: '70%',
     height: 14,
     borderRadius: 4,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
     marginBottom: 6,
   },
   activityTimeLoading: {
     width: '40%',
     height: 12,
     borderRadius: 4,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
   },
   activityAmountLoading: {
     width: 60,
     height: 16,
     borderRadius: 4,
-    backgroundColor: 'rgba(55, 139, 187, 0.2)',
+    backgroundColor: 'rgba(139, 92, 246, 0.20)',
   },
   emptyActivity: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
+    backgroundColor: 'rgba(26, 21, 48, 0.82)',
+    borderRadius: 16,
     padding: 40,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   emptyActivityText: {
     fontSize: 16,
@@ -708,8 +731,16 @@ const styles = StyleSheet.create({
   emptyActivitySubtext: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  nameIcon: {
+    marginTop: 2,
   },
 });
 
