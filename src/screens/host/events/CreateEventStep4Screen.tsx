@@ -15,6 +15,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
@@ -27,6 +28,7 @@ import Toast from 'react-native-toast-message';
 import { Step1Data } from './CreateEventStep1Screen';
 import { Step2Data } from './CreateEventStep2Screen';
 import { Step3Data } from './CreateEventStep3Screen';
+import LinearGradient from 'react-native-linear-gradient';
 
 type MediaItem = {
   localUri: string;
@@ -226,8 +228,14 @@ const CreateEventStep4Screen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -250,7 +258,7 @@ const CreateEventStep4Screen = () => {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(140, insets.bottom + 124) }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.stepTitle}>Media</Text>
@@ -278,7 +286,7 @@ const CreateEventStep4Screen = () => {
               </>
             ) : (
               <View style={styles.bannerEmpty}>
-                <Ionicons name="image-outline" size={40} color="#378BBB" />
+                <Ionicons name="image-outline" size={40} color="#06B6D4" />
                 <Text style={styles.bannerEmptyText}>Upload Banner Image</Text>
                 <Text style={styles.bannerEmptyHint}>Recommended: 16:9 ratio, min 1280×720</Text>
               </View>
@@ -311,7 +319,7 @@ const CreateEventStep4Screen = () => {
                 disabled={submitting}
                 activeOpacity={0.8}
               >
-                <Ionicons name="add" size={28} color="#378BBB" />
+                <Ionicons name="add" size={28} color="#06B6D4" />
               </TouchableOpacity>
             )}
           </View>
@@ -342,7 +350,7 @@ const CreateEventStep4Screen = () => {
               </View>
             ) : (
               <View style={styles.videoEmpty}>
-                <Ionicons name="videocam-outline" size={24} color="#378BBB" />
+                <Ionicons name="videocam-outline" size={24} color="#06B6D4" />
                 <Text style={styles.videoEmptyText}>+ Add Video Clip</Text>
               </View>
             )}
@@ -353,21 +361,21 @@ const CreateEventStep4Screen = () => {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Event Summary</Text>
           <View style={styles.summaryRow}>
-            <Ionicons name="text-outline" size={16} color="#378BBB" />
+            <Ionicons name="text-outline" size={16} color="#06B6D4" />
             <Text style={styles.summaryValue} numberOfLines={1}>{step1.title}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Ionicons name="calendar-outline" size={16} color="#378BBB" />
+            <Ionicons name="calendar-outline" size={16} color="#06B6D4" />
             <Text style={styles.summaryValue}>
               {new Date(step2.startTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Ionicons name="location-outline" size={16} color="#378BBB" />
+            <Ionicons name="location-outline" size={16} color="#06B6D4" />
             <Text style={styles.summaryValue} numberOfLines={1}>{step2.venue}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Ionicons name="ticket-outline" size={16} color="#378BBB" />
+            <Ionicons name="ticket-outline" size={16} color="#06B6D4" />
             <Text style={styles.summaryValue}>
               {step3.isFree ? 'Free Entry' : `₹${step3.price} per head`}
               {step3.capacityType === 'limited' ? ` · ${step3.capacityTotal} seats` : ' · Unlimited seats'}
@@ -378,129 +386,334 @@ const CreateEventStep4Screen = () => {
 
       {/* Footer Buttons */}
       {submitting ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
           <View style={styles.uploadingContainer}>
-            <ActivityIndicator color="#378BBB" size="small" />
+            <ActivityIndicator color="#06B6D4" size="small" />
             <Text style={styles.uploadingText}>  Uploading &amp; creating event…</Text>
           </View>
         </View>
       ) : (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
+        <TouchableOpacity
+          style={styles.draftButton}
+          onPress={() => handleSubmit('draft')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.draftButtonText}>Save as Draft</Text>
+        </TouchableOpacity>
           <TouchableOpacity
-            style={styles.draftButton}
-            onPress={() => handleSubmit('draft')}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="save-outline" size={18} color="#378BBB" />
-            <Text style={styles.draftButtonText}>Save as Draft</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.publishButton}
             onPress={() => handleSubmit('live')}
             activeOpacity={0.85}
           >
-            <Ionicons name="rocket-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.publishButtonText}>Publish Event</Text>
+            <LinearGradient
+              colors={['#8B2BE2', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.publishButton}
+            >
+              <Ionicons name="rocket-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.publishButtonText}>Publish Event</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 16,
+  container: { flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
-  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
-  stepContainer: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, marginBottom: 8 },
-  stepWrapper: { flex: 1, alignItems: 'center', gap: 4 },
-  stepBar: { height: 4, width: '100%', borderRadius: 2, backgroundColor: '#1B2F48' },
-  stepBarActive: { backgroundColor: '#FF4D6D' },
-  stepText: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85' },
-  stepTextActive: { color: '#FF4D6D', fontFamily: 'Inter-SemiBold' },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    backgroundColor: 'transparent',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+
+  stepContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    marginBottom: 12,
+  },
+  stepWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  stepBar: {
+    height: 3,
+    width: '100%',
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  stepBarActive: {
+    backgroundColor: '#8B2BE2',
+  },
+  stepText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.40)',
+  },
+  stepTextActive: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+
   scrollView: { flex: 1 },
-  content: { padding: 20, paddingBottom: 16 },
-  stepTitle: { fontSize: 24, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 6 },
-  stepSubtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9', marginBottom: 24 },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+
+  stepTitle: {
+    fontSize: 28,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  stepSubtitle: {
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+
   field: { marginBottom: 24 },
-  label: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', marginBottom: 10 },
-  required: { color: '#FF4D6D' },
-  optional: { color: '#506A85', fontFamily: 'Inter-Regular', fontSize: 12 },
+  label: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255,255,255,0.55)',
+    marginBottom: 10,
+  },
+  required: { color: '#22D3EE' },
+  optional: {
+    color: 'rgba(255,255,255,0.35)',
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+
   bannerPicker: {
-    height: 180,
-    backgroundColor: '#1B2F48',
-    borderRadius: 16,
+    height: 190,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
     borderStyle: 'dashed',
     overflow: 'hidden',
   },
-  bannerPickerFilled: { borderStyle: 'solid', borderColor: 'rgba(55, 139, 187, 0.5)' },
-  bannerImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  bannerPickerFilled: {
+    borderStyle: 'solid',
+    borderColor: 'rgba(139, 92, 246, 0.45)',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
   bannerOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(13, 11, 30, 0.70)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
-  bannerChangeText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
-  bannerEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  bannerEmptyText: { fontSize: 15, fontFamily: 'Inter-SemiBold', color: '#378BBB' },
-  bannerEmptyHint: { fontSize: 12, fontFamily: 'Inter-Regular', color: '#506A85' },
-  photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  photoThumb: { width: 88, height: 88, borderRadius: 10, overflow: 'hidden' },
-  photoImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  removePhotoButton: { position: 'absolute', top: 4, right: 4 },
+  bannerChangeText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+  bannerEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+  },
+  bannerEmptyText: {
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+    color: '#06B6D4',
+  },
+  bannerEmptyHint: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.35)',
+    textAlign: 'center',
+  },
+
+  photosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  photoThumb: {
+    width: 92,
+    height: 92,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.22)',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+  },
   addPhotoButton: {
-    width: 88, height: 88, borderRadius: 10,
-    backgroundColor: '#1B2F48', borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)', borderStyle: 'dashed',
-    alignItems: 'center', justifyContent: 'center',
+    width: 92,
+    height: 92,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
   videoPicker: {
-    backgroundColor: '#1B2F48', borderRadius: 12, borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)', borderStyle: 'dashed',
-    paddingVertical: 16, paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+    borderStyle: 'dashed',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
-  videoPickerFilled: { borderStyle: 'solid', borderColor: '#34C759', backgroundColor: 'rgba(52, 199, 89, 0.05)' },
-  videoEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' },
-  videoEmptyText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#378BBB' },
-  videoSelected: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  videoSelectedText: { flex: 1, fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#34C759' },
+  videoPickerFilled: {
+    borderStyle: 'solid',
+    borderColor: 'rgba(139, 92, 246, 0.45)',
+    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+  },
+  videoEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    justifyContent: 'center',
+  },
+  videoEmptyText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#06B6D4',
+  },
+  videoSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  videoSelectedText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+
   summaryCard: {
-    backgroundColor: '#1B2F48', borderRadius: 16,
-    padding: 16, borderWidth: 1, borderColor: 'rgba(55, 139, 187, 0.2)', gap: 10,
+    backgroundColor: '#1A1530',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.22)',
+    gap: 12,
   },
-  summaryTitle: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#378BBB', marginBottom: 4 },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  summaryValue: { flex: 1, fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9' },
-  footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: '#0E1621', gap: 10 },
+  summaryTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#06B6D4',
+    marginBottom: 2,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  summaryValue: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.82)',
+  },
+
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: 'transparent',
+    gap: 10,
+  },
   draftButton: {
-    backgroundColor: '#1B2F48', borderRadius: 14, paddingVertical: 14,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, borderWidth: 1, borderColor: 'rgba(55, 139, 187, 0.4)',
+    height: 54,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.28)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  draftButtonText: { fontSize: 15, fontFamily: 'Inter-SemiBold', color: '#378BBB' },
+  draftButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
   publishButton: {
-    backgroundColor: '#FF4D6D', borderRadius: 14, paddingVertical: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    height: 54,
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  publishButtonText: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  publishButtonText: {
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+
   uploadingContainer: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 16,
   },
-  uploadingText: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9' },
+  uploadingText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.70)',
+  },
 });
 
 export default CreateEventStep4Screen;
