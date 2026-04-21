@@ -10,15 +10,16 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  Platform,
   Alert,
   PermissionsAndroid,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DatePicker from 'react-native-date-picker';
+import LinearGradient from 'react-native-linear-gradient';
 import Geolocation from '@react-native-community/geolocation';
 import { encodeGeoHash } from '../../../utils/geoHash';
 import { Step1Data } from './CreateEventStep1Screen';
@@ -139,8 +140,14 @@ const CreateEventStep2Screen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -163,9 +170,9 @@ const CreateEventStep2Screen = () => {
 
       <KeyboardAwareScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 104) }]}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         enableOnAndroid
         extraScrollHeight={220}
         enableAutomaticScroll
@@ -181,7 +188,7 @@ const CreateEventStep2Screen = () => {
             onPress={() => setStartPickerOpen(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="calendar-outline" size={18} color="#378BBB" />
+            <Ionicons name="calendar-outline" size={18} color="#06B6D4" />
             <Text style={styles.dateText}>{formatDateTime(startTime)}</Text>
           </TouchableOpacity>
           {errors.startTime ? <Text style={styles.errorText}>{errors.startTime}</Text> : null}
@@ -195,7 +202,7 @@ const CreateEventStep2Screen = () => {
             onPress={() => setEndPickerOpen(true)}
             activeOpacity={0.8}
           >
-            <Ionicons name="calendar-outline" size={18} color="#378BBB" />
+            <Ionicons name="calendar-outline" size={18} color="#06B6D4" />
             <Text style={styles.dateText}>{formatDateTime(endTime)}</Text>
           </TouchableOpacity>
           {errors.endTime ? <Text style={styles.errorText}>{errors.endTime}</Text> : null}
@@ -210,7 +217,7 @@ const CreateEventStep2Screen = () => {
           <TextInput
             style={[styles.input, errors.venue && styles.inputError]}
             placeholder="e.g. Phoenix Palladium Mall"
-            placeholderTextColor="#506A85"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={venue}
             onChangeText={v => { setVenue(v); if (errors.venue) setErrors(e => ({ ...e, venue: '' })); }}
           />
@@ -223,7 +230,7 @@ const CreateEventStep2Screen = () => {
           <TextInput
             style={[styles.textarea, errors.address && styles.inputError]}
             placeholder="Street, Area, City, State"
-            placeholderTextColor="#506A85"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={address}
             onChangeText={a => { setAddress(a); if (errors.address) setErrors(e => ({ ...e, address: '' })); }}
             multiline
@@ -243,7 +250,7 @@ const CreateEventStep2Screen = () => {
           <Ionicons
             name={lat !== null ? 'location' : 'locate-outline'}
             size={20}
-            color={lat !== null ? '#34C759' : '#378BBB'}
+            color={lat !== null ? '#34C759' : '#06B6D4'}
           />
           <Text style={[styles.locationButtonText, lat !== null && styles.locationButtonTextActive]}>
             {fetchingLocation
@@ -259,10 +266,17 @@ const CreateEventStep2Screen = () => {
       </KeyboardAwareScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.nextButtonText}>Next</Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+      <View style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
+        <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#8B2BE2', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.nextButton}
+          >
+            <Text style={styles.nextButtonText}>Next</Text>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -292,99 +306,110 @@ const CreateEventStep2Screen = () => {
         cancelText="Cancel"
       />
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
+  container: { flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 14,
+    backgroundColor: 'transparent',
   },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
-  stepContainer: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, marginBottom: 8 },
+  headerTitle: { fontSize: 20, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  stepContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    marginBottom: 12,
+  },
   stepWrapper: { flex: 1, alignItems: 'center', gap: 4 },
-  stepBar: { height: 4, width: '100%', borderRadius: 2, backgroundColor: '#1B2F48' },
-  stepBarActive: { backgroundColor: '#FF4D6D' },
-  stepText: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85' },
-  stepTextActive: { color: '#FF4D6D', fontFamily: 'Inter-SemiBold' },
+  stepBar: { height: 3, width: '100%', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)' },
+  stepBarActive: { backgroundColor: '#8B2BE2' },
+  stepText: { fontSize: 11, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.40)' },
+  stepTextActive: { color: '#FFFFFF', fontFamily: 'Inter-SemiBold' },
   scrollView: { flex: 1 },
-  content: { padding: 20, paddingBottom: 16 },
-  stepTitle: { fontSize: 24, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 6 },
-  stepSubtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9', marginBottom: 24 },
+  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  stepTitle: { fontSize: 28, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 8 },
+  stepSubtitle: { fontSize: 15, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', marginBottom: 24, lineHeight: 22 },
   field: { marginBottom: 20 },
-  label: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', marginBottom: 8 },
-  required: { color: '#FF4D6D' },
+  label: { fontSize: 13, fontFamily: 'Inter-Medium', color: 'rgba(255,255,255,0.55)', marginBottom: 8 },
+  required: { color: '#22D3EE' },
   datePicker: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  dateText: { fontSize: 15, fontFamily: 'Inter-Regular', color: '#FFFFFF' },
+  dateText: { fontSize: 16, fontFamily: 'Inter-Regular', color: '#FFFFFF' },
   input: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
   textarea: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
-    fontSize: 15,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 16,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
-    minHeight: 90,
+    minHeight: 110,
   },
   inputError: { borderColor: '#FF5252' },
   errorText: { fontSize: 12, fontFamily: 'Inter-Regular', color: '#FF5252', marginTop: 4 },
-  divider: { height: 1, backgroundColor: 'rgba(55, 139, 187, 0.1)', marginBottom: 20 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginBottom: 20 },
   locationButton: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
+    minHeight: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginBottom: 8,
   },
-  locationButtonActive: { borderColor: '#34C759', backgroundColor: 'rgba(52, 199, 89, 0.1)' },
-  locationButtonText: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#378BBB' },
+  locationButtonActive: { borderColor: '#34C759', backgroundColor: 'rgba(52, 199, 89, 0.10)' },
+  locationButtonText: { fontSize: 15, fontFamily: 'Inter-Regular', color: '#06B6D4', flex: 1 },
   locationButtonTextActive: { color: '#34C759', fontFamily: 'Inter-SemiBold' },
-  locationHint: { fontSize: 12, fontFamily: 'Inter-Regular', color: '#506A85', marginBottom: 8 },
-  footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: '#0E1621' },
+  locationHint: { fontSize: 12, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.35)', marginBottom: 8, lineHeight: 18 },
+  footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: 'transparent' },
   nextButton: {
-    backgroundColor: '#FF4D6D',
-    borderRadius: 14,
-    paddingVertical: 16,
+    height: 54,
+    borderRadius: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  nextButtonText: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  nextButtonText: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 });
 
 export default CreateEventStep2Screen;
