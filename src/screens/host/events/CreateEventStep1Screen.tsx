@@ -9,15 +9,16 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StatusBar,
   Modal,
   FlatList,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import LinearGradient from 'react-native-linear-gradient';
 
 const EVENT_CATEGORIES = [
   { label: 'Music', icon: 'musical-notes-outline' },
@@ -89,17 +90,23 @@ const CreateEventStep1Screen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground
+      source={require('../../../assets/images/bg_party.webp')}
+      style={styles.container}
+      resizeMode="cover"
+      blurRadius={6}
+    >
+      <View style={styles.overlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Event</Text>
-        <View style={styles.backButton} />
-      </View>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Create Event</Text>
+          <View style={styles.backButton} />
+        </View>
 
       {/* Step Indicator */}
       <View style={styles.stepContainer}>
@@ -113,15 +120,15 @@ const CreateEventStep1Screen = () => {
         ))}
       </View>
 
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid
-        extraScrollHeight={220}
-        enableAutomaticScroll
-      >
+        <KeyboardAwareScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingBottom: Math.max(120, insets.bottom + 104) }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          enableOnAndroid
+          extraScrollHeight={220}
+          enableAutomaticScroll
+        >
         <Text style={styles.stepTitle}>Basic Details</Text>
         <Text style={styles.stepSubtitle}>Tell people what your event is about</Text>
 
@@ -131,7 +138,7 @@ const CreateEventStep1Screen = () => {
           <TextInput
             style={[styles.input, errors.title && styles.inputError]}
             placeholder="e.g. Summer Music Festival 2026"
-            placeholderTextColor="#506A85"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={title}
             onChangeText={t => { setTitle(t); if (errors.title) setErrors(e => ({ ...e, title: '' })); }}
             maxLength={80}
@@ -146,7 +153,7 @@ const CreateEventStep1Screen = () => {
           <TextInput
             style={[styles.textarea, errors.description && styles.inputError]}
             placeholder="Describe your event, what to expect, dress code, etc."
-            placeholderTextColor="#506A85"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={description}
             onChangeText={d => { setDescription(d); if (errors.description) setErrors(e => ({ ...e, description: '' })); }}
             multiline
@@ -171,14 +178,14 @@ const CreateEventStep1Screen = () => {
                 <Ionicons
                   name={EVENT_CATEGORIES.find(c => c.label === category)?.icon || 'help-outline'}
                   size={18}
-                  color="#378BBB"
+                  color="#06B6D4"
                 />
                 <Text style={styles.selectorValue}>{category}</Text>
               </View>
             ) : (
               <Text style={styles.selectorPlaceholder}>Select a category</Text>
             )}
-            <Ionicons name="chevron-down" size={18} color="#506A85" />
+            <Ionicons name="chevron-down" size={18} color="rgba(255,255,255,0.55)" />
           </TouchableOpacity>
           {errors.category ? <Text style={styles.errorText}>{errors.category}</Text> : null}
         </View>
@@ -190,7 +197,7 @@ const CreateEventStep1Screen = () => {
             <TextInput
               style={styles.tagInput}
               placeholder="e.g. outdoor, 18+"
-              placeholderTextColor="#506A85"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               value={tagInput}
               onChangeText={setTagInput}
               onSubmitEditing={addTag}
@@ -198,7 +205,7 @@ const CreateEventStep1Screen = () => {
               maxLength={20}
             />
             <TouchableOpacity style={styles.addTagButton} onPress={addTag}>
-              <Ionicons name="add" size={20} color="#378BBB" />
+              <Ionicons name="add" size={20} color="#06B6D4" />
             </TouchableOpacity>
           </View>
           {tags.length > 0 && (
@@ -207,7 +214,7 @@ const CreateEventStep1Screen = () => {
                 <View key={tag} style={styles.tagChip}>
                   <Text style={styles.tagChipText}>#{tag}</Text>
                   <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="close" size={14} color="#B8C7D9" />
+                    <Ionicons name="close" size={14} color="rgba(255,255,255,0.70)" />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -218,15 +225,28 @@ const CreateEventStep1Screen = () => {
       </KeyboardAwareScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.85}>
-          <Text style={styles.nextButtonText}>Next</Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+      <View style={[styles.footer, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
+        <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#8B2BE2', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.nextButton}
+          >
+            <Text style={styles.nextButtonText}>Next</Text>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-
+      
       {/* Category Modal */}
-      <Modal visible={categoryModal} transparent animationType="slide">
+      <Modal
+        visible={categoryModal}
+        transparent
+        animationType="slide"
+        statusBarTranslucent={true}
+        onRequestClose={() => setCategoryModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
@@ -240,13 +260,13 @@ const CreateEventStep1Screen = () => {
                   onPress={() => { setCategory(item.label); setCategoryModal(false); if (errors.category) setErrors(e => ({ ...e, category: '' })); }}
                 >
                   <View style={styles.categoryIcon}>
-                    <Ionicons name={item.icon} size={22} color={category === item.label ? '#FFFFFF' : '#378BBB'} />
+                    <Ionicons name={item.icon} size={22} color={category === item.label ? '#FFFFFF' : '#06B6D4'} />
                   </View>
                   <Text style={[styles.categoryLabel, category === item.label && styles.categoryLabelActive]}>
                     {item.label}
                   </Text>
                   {category === item.label && (
-                    <Ionicons name="checkmark" size={20} color="#FF4D6D" />
+                    <Ionicons name="checkmark" size={20} color="#06B6D4" />
                   )}
                 </TouchableOpacity>
               )}
@@ -258,103 +278,109 @@ const CreateEventStep1Screen = () => {
         </View>
       </Modal>
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
+  container: { flex: 1 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#0E1621',
+    paddingBottom: 14,
+    backgroundColor: 'transparent',
   },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  headerTitle: { fontSize: 20, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
   stepContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   stepWrapper: { flex: 1, alignItems: 'center', gap: 4 },
-  stepBar: { height: 4, width: '100%', borderRadius: 2, backgroundColor: '#1B2F48' },
-  stepBarActive: { backgroundColor: '#FF4D6D' },
-  stepText: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85' },
-  stepTextActive: { color: '#FF4D6D', fontFamily: 'Inter-SemiBold' },
+  stepBar: { height: 3, width: '100%', borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)' },
+  stepBarActive: { backgroundColor: '#8B2BE2' },
+  stepText: { fontSize: 11, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.40)' },
+  stepTextActive: { color: '#FFFFFF', fontFamily: 'Inter-SemiBold' },
   scrollView: { flex: 1 },
-  content: { padding: 20, paddingBottom: 16 },
-  stepTitle: { fontSize: 24, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 6 },
-  stepSubtitle: { fontSize: 14, fontFamily: 'Inter-Regular', color: '#B8C7D9', marginBottom: 24 },
-  field: { marginBottom: 20 },
-  label: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', marginBottom: 8 },
-  required: { color: '#FF4D6D' },
-  optional: { color: '#506A85', fontFamily: 'Inter-Regular' },
+  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  stepTitle: { fontSize: 28, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 8 },
+  stepSubtitle: { fontSize: 15, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', marginBottom: 24, lineHeight: 22 },
+  field: { marginBottom: 20, zIndex: 20, elevation: 2 },
+  label: { fontSize: 13, fontFamily: 'Inter-Medium', color: 'rgba(255,255,255,0.55)', marginBottom: 8 },
+  required: { color: '#22D3EE' },
+  optional: { color: 'rgba(255,255,255,0.35)', fontFamily: 'Inter-Regular' },
   input: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
   textarea: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
-    fontSize: 15,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 16,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
-    minHeight: 120,
+    minHeight: 140,
   },
   inputError: { borderColor: '#FF5252' },
   errorText: { fontSize: 12, fontFamily: 'Inter-Regular', color: '#FF5252', marginTop: 4 },
-  charCount: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85', textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 11, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.35)', textAlign: 'right', marginTop: 6 },
   selector: {
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   selectorRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  selectorValue: { fontSize: 15, fontFamily: 'Inter-Regular', color: '#FFFFFF' },
-  selectorPlaceholder: { fontSize: 15, fontFamily: 'Inter-Regular', color: '#506A85' },
+  selectorValue: { fontSize: 16, fontFamily: 'Inter-Regular', color: '#FFFFFF' },
+  selectorPlaceholder: { fontSize: 16, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.35)' },
   tagInputRow: {
     flexDirection: 'row',
     gap: 8,
   },
   tagInput: {
     flex: 1,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
+    paddingHorizontal: 18,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
   addTagButton: {
-    width: 48,
-    backgroundColor: '#1B2F48',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
+    width: 54,
+    height: 54,
+    backgroundColor: '#16112B',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.30)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -363,25 +389,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(55, 139, 187, 0.15)',
+    backgroundColor: 'rgba(139, 92, 246, 0.18)',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(55, 139, 187, 0.3)',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
-  tagChipText: { fontSize: 13, fontFamily: 'Inter-Regular', color: '#378BBB' },
-  footer: { paddingHorizontal: 20, paddingTop: 12, backgroundColor: '#0E1621' },
+  tagChipText: { fontSize: 13, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: 'rgba(13, 11, 30, 0)',
+  },
   nextButton: {
-    backgroundColor: '#FF4D6D',
-    borderRadius: 14,
-    paddingVertical: 16,
+    height: 54,
+    borderRadius: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  nextButtonText: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  nextButtonText: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
   // Modal
   modalOverlay: {
     flex: 1,
@@ -389,21 +418,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#16283D',
+    backgroundColor: '#1A1530',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '75%',
-    paddingBottom: 8,
+    paddingBottom: 40,
   },
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#378BBB',
+    backgroundColor: 'rgba(255,255,255,0.35)',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 8,
-    opacity: 0.5,
+    opacity: 0.8,
   },
   modalTitle: { fontSize: 18, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', textAlign: 'center', marginBottom: 12, paddingHorizontal: 20 },
   categoryItem: {
@@ -413,14 +442,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(55, 139, 187, 0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  categoryItemActive: { backgroundColor: 'rgba(55, 139, 187, 0.1)' },
-  categoryIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(55, 139, 187, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  categoryItemActive: { backgroundColor: 'rgba(139, 92, 246, 0.18)' },
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(139, 92, 246, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   categoryLabel: { flex: 1, fontSize: 15, fontFamily: 'Inter-Regular', color: '#FFFFFF' },
   categoryLabelActive: { fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
   modalClose: { paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  modalCloseText: { fontSize: 15, fontFamily: 'Inter-SemiBold', color: '#FF5252' },
+  modalCloseText: { fontSize: 15, fontFamily: 'Inter-SemiBold', color: '#22D3EE' },
 });
 
 export default CreateEventStep1Screen;
