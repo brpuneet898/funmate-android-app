@@ -13,6 +13,8 @@ import {
   Alert,
   PermissionsAndroid,
   ImageBackground,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -280,31 +282,110 @@ const CreateEventStep2Screen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Date Pickers */}
-      <DatePicker
-        modal
-        open={startPickerOpen}
-        date={startTime}
-        minimumDate={new Date()}
-        onConfirm={(date) => { setStartPickerOpen(false); setStartTime(date); if (endTime <= date) setEndTime(new Date(date.getTime() + 3 * 60 * 60 * 1000)); }}
-        onCancel={() => setStartPickerOpen(false)}
-        theme="dark"
-        title="Select Start Date & Time"
-        confirmText="Set"
-        cancelText="Cancel"
-      />
-      <DatePicker
-        modal
-        open={endPickerOpen}
-        date={endTime}
-        minimumDate={startTime}
-        onConfirm={(date) => { setEndPickerOpen(false); setEndTime(date); }}
-        onCancel={() => setEndPickerOpen(false)}
-        theme="dark"
-        title="Select End Date & Time"
-        confirmText="Set"
-        cancelText="Cancel"
-      />
+      {/* Start Date Modal */}
+      <Modal
+        visible={startPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStartPickerOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setStartPickerOpen(false)} />
+          <View style={[styles.dateModalSheet, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.dateModalTitle}>Select Start Date & Time</Text>
+
+            <DatePicker
+              date={startTime}
+              minimumDate={new Date()}
+              mode="datetime"
+              theme="dark"
+              textColor="#FFFFFF"
+              fadeToColor="none"
+              onDateChange={setStartTime}
+            />
+
+            <View style={styles.dateModalActions}>
+              <TouchableOpacity
+                style={styles.dateModalCancelButton}
+                onPress={() => setStartPickerOpen(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.dateModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  setStartPickerOpen(false);
+                  if (endTime <= startTime) {
+                    setEndTime(new Date(startTime.getTime() + 3 * 60 * 60 * 1000));
+                  }
+                }}
+              >
+                <LinearGradient
+                  colors={['#8B2BE2', '#06B6D4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.dateModalConfirmButton}
+                >
+                  <Text style={styles.dateModalConfirmText}>Set</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* End Date Modal */}
+      <Modal
+        visible={endPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEndPickerOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setEndPickerOpen(false)} />
+          <View style={[styles.dateModalSheet, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.dateModalTitle}>Select End Date & Time</Text>
+
+            <DatePicker
+              date={endTime}
+              minimumDate={startTime}
+              mode="datetime"
+              theme="dark"
+              textColor="#FFFFFF"
+              fadeToColor="none"
+              onDateChange={setEndTime}
+            />
+
+            <View style={styles.dateModalActions}>
+              <TouchableOpacity
+                style={styles.dateModalCancelButton}
+                onPress={() => setEndPickerOpen(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.dateModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setEndPickerOpen(false)}
+              >
+                <LinearGradient
+                  colors={['#8B2BE2', '#06B6D4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.dateModalConfirmButton}
+                >
+                  <Text style={styles.dateModalConfirmText}>Set</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
     </ImageBackground>
   );
@@ -410,6 +491,76 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   nextButtonText: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.72)',
+    justifyContent: 'flex-end',
+  },
+
+  dateModalSheet: {
+    backgroundColor: '#1A1530',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+  },
+
+  modalHandle: {
+    width: 52,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+
+  dateModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
+  dateModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+
+  dateModalCancelButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  dateModalCancelText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+
+  dateModalConfirmButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+
+  dateModalConfirmText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
 });
 
 export default CreateEventStep2Screen;
