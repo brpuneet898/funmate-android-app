@@ -10,7 +10,6 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  Alert,
   PermissionsAndroid,
   ImageBackground,
   Modal,
@@ -68,6 +67,15 @@ const CreateEventStep2Screen = () => {
   const [geoHash, setGeoHash] = useState('');
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
+  const showThemedAlert = (title: string, message: string) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
 
   const useCurrentLocation = async () => {
     try {
@@ -82,7 +90,7 @@ const CreateEventStep2Screen = () => {
         }
       );
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        Alert.alert('Permission Denied', 'Location permission is required to use this feature.');
+        showThemedAlert('Permission Denied', 'Location permission is required to use this feature.');
         return;
       }
     } catch (err) {
@@ -98,15 +106,14 @@ const CreateEventStep2Screen = () => {
         setLng(longitude);
         setGeoHash(encodeGeoHash(latitude, longitude));
         setFetchingLocation(false);
-        Alert.alert(
+        showThemedAlert(
           'Location Captured',
-          'Your current coordinates have been saved. Fill in the venue name and address below.',
-          [{ text: 'OK' }]
+          'Your current coordinates have been saved. Fill in the venue name and address below.'
         );
       },
       error => {
         setFetchingLocation(false);
-        Alert.alert('Location Error', error.message);
+        showThemedAlert('Location Error', error.message);
       },
       {
         enableHighAccuracy: false,  // use network/cell tower — much faster than GPS
@@ -386,6 +393,37 @@ const CreateEventStep2Screen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Themed Alert Modal */}
+      <Modal
+        visible={alertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertVisible(false)}
+      >
+        <View style={styles.alertOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAlertVisible(false)} />
+          <View style={styles.alertCard}>
+            <View style={styles.alertIconWrap}>
+              <Ionicons name="location-outline" size={22} color="#06B6D4" />
+            </View>
+
+            <Text style={styles.alertTitle}>{alertTitle}</Text>
+            <Text style={styles.alertMessage}>{alertMessage}</Text>
+
+            <TouchableOpacity activeOpacity={0.85} onPress={() => setAlertVisible(false)}>
+              <LinearGradient
+                colors={['#8B2BE2', '#06B6D4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.alertButton}
+              >
+                <Text style={styles.alertButtonText}>OK</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
     </ImageBackground>
   );
@@ -557,6 +595,67 @@ const styles = StyleSheet.create({
   },
 
   dateModalConfirmText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+
+  alertCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#1A1530',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+  },
+
+  alertIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+
+  alertTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+
+  alertMessage: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 18,
+  },
+
+  alertButton: {
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  alertButtonText: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
