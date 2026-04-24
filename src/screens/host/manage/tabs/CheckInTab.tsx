@@ -8,10 +8,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ImageBackground,
+  StatusBar,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -207,9 +211,9 @@ const MemberCard = ({
 
 const mcStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#132232',
-    borderRadius: 14, padding: 16, marginBottom: 10,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+    backgroundColor: 'rgba(26,21,48,0.82)',
+    borderRadius: 18, padding: 16, marginBottom: 10,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)',
     gap: 14,
   },
   cardCheckedIn: { borderColor: 'rgba(52,199,89,0.3)',  backgroundColor: 'rgba(52,199,89,0.05)' },
@@ -219,8 +223,8 @@ const mcStyles = StyleSheet.create({
   details:  { flex: 1 },
   nameRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   name:     { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF', flexShrink: 1 },
-  nameDim:  { color: '#7F93AA' },
-  meta:     { fontSize: 13, fontFamily: 'Inter-Regular', color: '#B8C7D9', marginTop: 3 },
+  nameDim:  { color: 'rgba(255,255,255,0.45)' },
+  meta:     { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', marginTop: 3 },
   statusRow:{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   checkedInText: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#34C759' },
   rejectedText:  { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#FF5252' },
@@ -253,6 +257,7 @@ const CheckInTab = ({ eventId }: Props) => {
   // Set instead of single id — prevents race when host taps two cards before first resolves
   const [busyIds,   setBusyIds]   = useState<Set<string>>(new Set());
   const inputRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
 
   // ── Lookup ────────────────────────────────────────────────────────────────
   const handleVerify = useCallback(async () => {
@@ -381,7 +386,7 @@ const CheckInTab = ({ eventId }: Props) => {
     if (lookup.phase === 'loading') {
       return (
         <View style={styles.resultBox}>
-          <ActivityIndicator size="large" color="#378BBB" />
+          <ActivityIndicator size="large" color="#8B2BE2" />
         </View>
       );
     }
@@ -437,7 +442,7 @@ const CheckInTab = ({ eventId }: Props) => {
               <Ionicons
                 name={members[0]?.bookingType === 'solo' ? 'person-circle-outline' : 'people-circle-outline'}
                 size={20}
-                color="#378BBB"
+                color="#06B6D4"
               />
               <Text style={styles.groupLabel}>{groupLabel(members)}</Text>
             </View>
@@ -462,7 +467,7 @@ const CheckInTab = ({ eventId }: Props) => {
 
           {/* Scan another button */}
           <TouchableOpacity style={styles.scanAnotherBtn} onPress={handleReset}>
-            <Ionicons name="refresh-outline" size={16} color="#378BBB" />
+            <Ionicons name="refresh-outline" size={16} color="#06B6D4" />
             <Text style={styles.scanAnotherText}>Scan Another Code</Text>
           </TouchableOpacity>
         </View>
@@ -473,13 +478,25 @@ const CheckInTab = ({ eventId }: Props) => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      showsVerticalScrollIndicator={false}
+    <ImageBackground
+      source={require('../../../../assets/images/bg_splash.webp')}
+      style={styles.backgroundImage}
+      imageStyle={styles.backgroundImageStyle}
+      blurRadius={6}
     >
+      <View style={styles.backgroundOverlay}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(40, insets.bottom + 24) },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
       {/* ── Header hint ── */}
       <View style={styles.hintRow}>
         <Ionicons name="information-circle-outline" size={15} color="#506A85" />
@@ -519,84 +536,99 @@ const CheckInTab = ({ eventId }: Props) => {
         </View>
 
         <TouchableOpacity
-          style={[styles.verifyBtn, (!code.trim() || lookup.phase === 'loading') && styles.verifyBtnDisabled]}
+          style={(!code.trim() || lookup.phase === 'loading') && styles.verifyBtnDisabled}
           onPress={handleVerify}
           disabled={!code.trim() || lookup.phase === 'loading'}
           activeOpacity={0.85}
         >
-          {lookup.phase === 'loading' ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <>
-              <Ionicons name="search" size={18} color="#FFF" />
-              <Text style={styles.verifyBtnText}>Verify Code</Text>
-            </>
-          )}
+          <LinearGradient
+            colors={['#8B2BE2', '#06B6D4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.verifyBtn}
+          >
+            {lookup.phase === 'loading' ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="search" size={18} color="#FFF" />
+                <Text style={styles.verifyBtnText}>Verify Code</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
       {/* ── Result area ── */}
       {renderResult()}
     </ScrollView>
+    </View>
+  </ImageBackground>
   );
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
-  content:   { padding: 16, paddingBottom: 40 },
+  backgroundImage: { flex: 1 },
+  backgroundImageStyle: { resizeMode: 'cover' },
+  backgroundOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.68)',
+  },
+  container: { flex: 1, backgroundColor: 'transparent' },
+  content:   { padding: 16 },
 
   // hint
   hintRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 7,
     marginBottom: 14,
   },
-  hintText: { flex: 1, fontSize: 12, fontFamily: 'Inter-Regular', color: '#506A85', lineHeight: 18 },
+  hintText: { flex: 1, fontSize: 12, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', lineHeight: 18 },
 
   // input card
   inputCard: {
-    backgroundColor: '#132232',
-    borderRadius: 16, padding: 18, marginBottom: 20,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+    backgroundColor: 'rgba(26,21,48,0.82)',
+    borderRadius: 20, padding: 18, marginBottom: 20,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)',
     gap: 12,
   },
-  inputLabel: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#7F93AA', textTransform: 'uppercase', letterSpacing: 0.8 },
+  inputLabel: { fontSize: 12, fontFamily: 'Inter-SemiBold', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.8 },
   inputRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
   input: {
     flex: 1,
-    backgroundColor: '#0E1621', borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14,
+    borderWidth: 1.5, borderColor: 'rgba(139,92,246,0.30)',
     paddingHorizontal: 16, paddingVertical: 14,
     fontSize: 22, fontFamily: 'Inter-Bold', color: '#FFFFFF',
     letterSpacing: 3, textAlign: 'center',
   },
   clearBtn: { padding: 4 },
   verifyBtn: {
-    backgroundColor: '#378BBB', borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 30,
+    paddingVertical: 15,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  verifyBtnDisabled: { backgroundColor: '#1B3A52', opacity: 0.6 },
+  verifyBtnDisabled: { opacity: 0.45 },
   verifyBtnText: { fontSize: 16, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 
   // result boxes (error / warning)
   resultBox: {
-    backgroundColor: '#132232', borderRadius: 16, padding: 28,
+    backgroundColor: 'rgba(26,21,48,0.82)', borderRadius: 20, padding: 28,
     alignItems: 'center', gap: 10,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.12)',
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)',
   },
   resultError:   { borderColor: 'rgba(255,82,82,0.2)',   backgroundColor: 'rgba(255,82,82,0.04)'   },
   resultWarning: { borderColor: 'rgba(255,159,10,0.2)',  backgroundColor: 'rgba(255,159,10,0.04)'  },
   resultErrorTitle:   { fontSize: 17, fontFamily: 'Inter-Bold',    color: '#FF5252',  marginTop: 4 },
-  resultErrorSub:     { fontSize: 13, fontFamily: 'Inter-Regular', color: '#7F93AA', textAlign: 'center' },
+  resultErrorSub:     { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
   resultWarningTitle: { fontSize: 17, fontFamily: 'Inter-Bold',    color: '#FF9F0A', marginTop: 4 },
-  resultWarningSub:   { fontSize: 13, fontFamily: 'Inter-Regular', color: '#7F93AA', textAlign: 'center' },
+  resultWarningSub:   { fontSize: 13, fontFamily: 'Inter-Regular', color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
   tryAgainBtn: {
     marginTop: 8, paddingHorizontal: 24, paddingVertical: 10,
-    backgroundColor: '#1B3A52', borderRadius: 20,
+    backgroundColor: 'rgba(139,92,246,0.18)', borderRadius: 20,
   },
-  tryAgainText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#B8C7D9' },
+  tryAgainText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: 'rgba(255,255,255,0.55)' },
 
   // found result
   foundContainer: { gap: 0 },
@@ -605,7 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   groupHeaderLeft:  { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  groupLabel:       { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#B8C7D9' },
+  groupLabel:       { fontSize: 14, fontFamily: 'Inter-SemiBold', color: 'rgba(255,255,255,0.78)' },
   pendingBadge:     {
     backgroundColor: 'rgba(255,159,10,0.15)', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 3,
@@ -615,10 +647,10 @@ const styles = StyleSheet.create({
   scanAnotherBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     marginTop: 8, paddingVertical: 14,
-    backgroundColor: 'rgba(55,139,187,0.08)', borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.25)',
   },
-  scanAnotherText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#378BBB' },
+  scanAnotherText: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#06B6D4' },
 });
 
 export default CheckInTab;
