@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
+  TouchableWithoutFeedback,
   StatusBar,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import LinearGradient from 'react-native-linear-gradient';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +112,7 @@ const HostBankAccountScreen = () => {
   // ── Edit state ──
   const [editMode,     setEditMode]     = useState(false);
   const [saving,       setSaving]       = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [holderName,   setHolderName]   = useState('');
   const [accountNo,    setAccountNo]    = useState('');
   const [confirmNo,    setConfirmNo]    = useState('');
@@ -267,10 +270,13 @@ const HostBankAccountScreen = () => {
     return (
     <ImageBackground source={require('../../assets/images/bg_splash.webp')} style={styles.container} blurRadius={8} resizeMode="cover">
       <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          style={styles.keyboardContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+          setFocusedInput(null);
+        }}
+      >
+        <View style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
         <View style={[styles.navBar, { paddingTop: insets.top + 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)' }]}>
@@ -286,11 +292,16 @@ const HostBankAccountScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(40, insets.bottom + 40) }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+          <KeyboardAwareScrollView
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(40, insets.bottom + 40) }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            extraScrollHeight={100}
+            extraHeight={150}
+            enableAutomaticScroll={true}
+            keyboardOpeningTime={0}
+          >
           {/* Re-verification notice */}
           <View style={styles.infoCard}>
             <Ionicons name="information-circle-outline" size={16} color="#06B6D4" style={{ marginTop: 1 }} />
@@ -303,11 +314,13 @@ const HostBankAccountScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Account Holder Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedInput === 'holderName' && styles.inputFocused]}
               value={holderName}
               onChangeText={setHolderName}
               placeholder="As on bank records"
               placeholderTextColor="rgba(255,255,255,0.35)"
+              onFocus={() => setFocusedInput('holderName')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
@@ -315,13 +328,15 @@ const HostBankAccountScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>New Account Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedInput === 'accountNo' && styles.inputFocused]}
               value={accountNo}
               onChangeText={setAccountNo}
               placeholder="Enter full account number"
               placeholderTextColor="rgba(255,255,255,0.35)"
               keyboardType="number-pad"
               secureTextEntry
+              onFocus={() => setFocusedInput('accountNo')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
@@ -329,12 +344,14 @@ const HostBankAccountScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Confirm Account Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedInput === 'confirmNo' && styles.inputFocused]}
               value={confirmNo}
               onChangeText={setConfirmNo}
               placeholder="Re-enter account number"
               placeholderTextColor="rgba(255,255,255,0.35)"
               keyboardType="number-pad"
+              onFocus={() => setFocusedInput('confirmNo')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
@@ -342,13 +359,15 @@ const HostBankAccountScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>IFSC Code</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedInput === 'ifsc' && styles.inputFocused]}
               value={ifsc}
               onChangeText={t => setIfsc(t.toUpperCase())}
               placeholder="e.g. SBIN0001234"
               placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="characters"
               maxLength={11}
+              onFocus={() => setFocusedInput('ifsc')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
@@ -356,11 +375,13 @@ const HostBankAccountScreen = () => {
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Bank Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, focusedInput === 'bankName' && styles.inputFocused]}
               value={bankName}
               onChangeText={setBankName}
               placeholder="e.g. State Bank of India"
               placeholderTextColor="rgba(255,255,255,0.35)"
+              onFocus={() => setFocusedInput('bankName')}
+              onBlur={() => setFocusedInput(null)}
             />
           </View>
 
@@ -382,8 +403,9 @@ const HostBankAccountScreen = () => {
               ))}
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+        </View>
+      </TouchableWithoutFeedback>
       </View>
       </ImageBackground>
     );
@@ -726,6 +748,9 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  inputFocused: {
+    borderColor: 'rgba(139, 92, 246, 0.80)',
   },
 });
 
