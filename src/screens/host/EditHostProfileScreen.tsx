@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -45,14 +46,14 @@ const FieldLabel = ({ text, optional }: { text: string; optional?: boolean }) =>
 const fieldStyles = StyleSheet.create({
   label: {
     fontSize: 13,
-    fontFamily: 'Inter-SemiBold',
-    color: '#B8C7D9',
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 8,
   },
   optional: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.35)',
   },
 });
 
@@ -193,21 +194,37 @@ const EditHostProfileScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-        <ActivityIndicator size="large" color="#378BBB" />
-      </View>
+      <ImageBackground
+        source={require('../../assets/images/bg_splash.webp')}
+        style={styles.container}
+        resizeMode="cover"
+        blurRadius={8}
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#8B2BE2" />
+          </View>
+        </View>
+      </ImageBackground>
     );
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <KeyboardAvoidingView
+    <ImageBackground
+      source={require('../../assets/images/bg_splash.webp')}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      resizeMode="cover"
+      blurRadius={8}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+      <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.keyboardContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* Nav bar */}
       <View style={[styles.navBar, { paddingTop: insets.top + 12 }]}>
@@ -221,14 +238,14 @@ const EditHostProfileScreen = () => {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {saving
-            ? <ActivityIndicator size="small" color="#378BBB" />
+            ? <ActivityIndicator size="small" color="#06B6D4" />
             : <Text style={styles.saveBtn}>Save</Text>
           }
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(40, insets.bottom + 32) }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -253,7 +270,7 @@ const EditHostProfileScreen = () => {
                 {cat}
               </Text>
               {category === cat
-                ? <Ionicons name="checkmark" size={18} color="#378BBB" />
+                ? <Ionicons name="checkmark" size={18} color="#06B6D4" />
                 : null
               }
             </TouchableOpacity>
@@ -261,6 +278,8 @@ const EditHostProfileScreen = () => {
         </View>
       </Modal>
     </KeyboardAvoidingView>
+    </View>
+  </ImageBackground>
   );
 
   // ── Individual form ────────────────────────────────────────────────────────
@@ -276,7 +295,7 @@ const EditHostProfileScreen = () => {
             value={bio}
             onChangeText={setBio}
             placeholder="Tell people about yourself as a host (min 50 characters)"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             multiline
             textAlignVertical="top"
             maxLength={500}
@@ -292,7 +311,7 @@ const EditHostProfileScreen = () => {
             value={experience}
             onChangeText={t => setExperience(t.replace(/\D/g, ''))}
             placeholder="e.g. 3"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             keyboardType="number-pad"
             maxLength={2}
           />
@@ -326,7 +345,7 @@ const EditHostProfileScreen = () => {
               value={instagram}
               onChangeText={setInstagram}
               placeholder="username"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="none"
             />
           </View>
@@ -342,7 +361,7 @@ const EditHostProfileScreen = () => {
               value={twitter}
               onChangeText={setTwitter}
               placeholder="username"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="none"
             />
           </View>
@@ -358,7 +377,7 @@ const EditHostProfileScreen = () => {
               value={linkedin}
               onChangeText={setLinkedin}
               placeholder="username or profile URL"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="none"
             />
           </View>
@@ -374,7 +393,7 @@ const EditHostProfileScreen = () => {
               value={facebook}
               onChangeText={setFacebook}
               placeholder="username"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               autoCapitalize="none"
             />
           </View>
@@ -396,7 +415,7 @@ const EditHostProfileScreen = () => {
             value={orgName}
             onChangeText={setOrgName}
             placeholder="Your business name"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
           />
         </View>
 
@@ -408,7 +427,7 @@ const EditHostProfileScreen = () => {
             value={description}
             onChangeText={setDescription}
             placeholder="Describe your business or events"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             multiline
             textAlignVertical="top"
             maxLength={500}
@@ -426,7 +445,7 @@ const EditHostProfileScreen = () => {
             value={addressLine}
             onChangeText={setAddressLine}
             placeholder="Street / building / area"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
           />
         </View>
 
@@ -438,7 +457,7 @@ const EditHostProfileScreen = () => {
               value={city}
               onChangeText={setCity}
               placeholder="City"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
             />
           </View>
           <View style={[styles.fieldGroup, { flex: 1 }]}>
@@ -448,7 +467,7 @@ const EditHostProfileScreen = () => {
               value={stateVal}
               onChangeText={setStateVal}
               placeholder="State"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
             />
           </View>
         </View>
@@ -460,7 +479,7 @@ const EditHostProfileScreen = () => {
             value={country}
             onChangeText={setCountry}
             placeholder="Country"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
           />
         </View>
 
@@ -474,7 +493,7 @@ const EditHostProfileScreen = () => {
             value={contactEmail}
             onChangeText={setContactEmail}
             placeholder="business@example.com"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -487,7 +506,7 @@ const EditHostProfileScreen = () => {
             value={website}
             onChangeText={setWebsite}
             placeholder="https://yourbusiness.com"
-            placeholderTextColor="#3A5068"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             keyboardType="url"
             autoCapitalize="none"
           />
@@ -503,7 +522,7 @@ const EditHostProfileScreen = () => {
               value={igUrl}
               onChangeText={setIgUrl}
               placeholder="https://instagram.com/yourpage"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               keyboardType="url"
               autoCapitalize="none"
             />
@@ -520,7 +539,7 @@ const EditHostProfileScreen = () => {
               value={liUrl}
               onChangeText={setLiUrl}
               placeholder="https://linkedin.com/company/yourco"
-              placeholderTextColor="#3A5068"
+              placeholderTextColor="rgba(255,255,255,0.35)"
               keyboardType="url"
               autoCapitalize="none"
             />
@@ -536,11 +555,17 @@ const EditHostProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0E1621',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -550,9 +575,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#0E1621',
+    backgroundColor: 'rgba(13, 11, 30, 0)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(55,139,187,0.12)',
+    borderBottomColor: 'rgba(139,92,246,0.20)',
   },
   navTitle: {
     fontSize: 17,
@@ -562,7 +587,7 @@ const styles = StyleSheet.create({
   saveBtn: {
     fontSize: 15,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#06B6D4',
   },
   scroll: {
     paddingHorizontal: 20,
@@ -572,13 +597,13 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   input: {
-    backgroundColor: '#16283D',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
-    paddingHorizontal: 14,
+    backgroundColor: 'rgba(22,17,43,0.72)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
+    paddingHorizontal: 18,
     paddingVertical: Platform.OS === 'ios' ? 14 : 11,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#FFFFFF',
   },
@@ -597,11 +622,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#16283D',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
-    paddingHorizontal: 14,
+    backgroundColor: 'rgba(22,17,43,0.72)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
+    paddingHorizontal: 18,
     paddingVertical: Platform.OS === 'ios' ? 14 : 13,
   },
   pickerValue: {
@@ -617,11 +642,11 @@ const styles = StyleSheet.create({
   socialInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#16283D',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
-    paddingHorizontal: 14,
+    backgroundColor: 'rgba(22,17,43,0.72)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(139,92,246,0.30)',
+    paddingHorizontal: 18,
   },
   socialIcon: {
     marginRight: 10,
@@ -635,14 +660,14 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(55,139,187,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     marginBottom: 20,
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Inter-SemiBold',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 16,
@@ -657,11 +682,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalSheet: {
-    backgroundColor: '#16283D',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: '#1A1530',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingTop: 20,
     paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   modalTitle: {
     fontSize: 16,
@@ -675,12 +702,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(55,139,187,0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.10)',
   },
   modalOptionText: {
     fontSize: 15,
     fontFamily: 'Inter-Regular',
-    color: '#B8C7D9',
+    color: 'rgba(255,255,255,0.70)',
   },
   modalOptionActive: {
     color: '#FFFFFF',
