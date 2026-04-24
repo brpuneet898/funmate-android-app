@@ -8,11 +8,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import firestore from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
+import LinearGradient from 'react-native-linear-gradient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +97,7 @@ const SettlementCard = React.memo(({ item }: { item: Settlement }) => {
       {/* ── Period + status badge ── */}
       <View style={cStyles.header}>
         <View style={cStyles.headerLeft}>
-          <Ionicons name="calendar-outline" size={14} color="#506A85" />
+          <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.45)" />
           <Text style={cStyles.period}>{fmtPeriod(item.periodStart, item.periodEnd)}</Text>
         </View>
         <View style={[cStyles.badge, { backgroundColor: cfg.bg }]}>
@@ -173,9 +175,9 @@ const SettlementCard = React.memo(({ item }: { item: Settlement }) => {
 
 const cStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#132232',
+    backgroundColor: 'rgba(26, 21, 48, 0.82)',
     borderRadius: 16, padding: 18, marginBottom: 12,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.12)',
+    borderWidth: 1, borderColor: 'rgba(139,92,246,0.22)',
   },
   header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -185,7 +187,7 @@ const cStyles = StyleSheet.create({
     borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
   },
   badgeText: { fontSize: 12, fontFamily: 'Inter-SemiBold' },
-  divider:   { height: 1, backgroundColor: 'rgba(55,139,187,0.1)', marginVertical: 14 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 14 },
   row:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   rowLabel:  { fontSize: 13, fontFamily: 'Inter-Regular', color: '#7F93AA' },
   rowValue:  { fontSize: 13, fontFamily: 'Inter-SemiBold', color: '#B8C7D9' },
@@ -196,7 +198,7 @@ const cStyles = StyleSheet.create({
   footer:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   utrChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#0E1621', borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 4,
   },
   utrText:  { fontSize: 11, fontFamily: 'Inter-Medium', color: '#7F93AA' },
@@ -264,16 +266,19 @@ const HostPayoutsScreen = () => {
 
   if (loading) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-        <ActivityIndicator size="large" color="#378BBB" />
-      </View>
+      <ImageBackground source={require('../../assets/images/bg_party.webp')} blurRadius={6} style={styles.background}>
+        <View style={[styles.overlay, styles.center, { paddingTop: insets.top }]}>
+          <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+          <ActivityIndicator size="large" color="#06B6D4" />
+        </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+    <ImageBackground source={require('../../assets/images/bg_party.webp')} blurRadius={6} style={styles.background}>
+      <View style={[styles.overlay, { paddingTop: insets.top }]}>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -282,14 +287,14 @@ const HostPayoutsScreen = () => {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(48, insets.bottom + 28) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#378BBB"
-            colors={['#378BBB']}
+            tintColor="#06B6D4"
+            colors={['#8B2BE2', '#06B6D4']}
           />
         }
       >
@@ -317,7 +322,7 @@ const HostPayoutsScreen = () => {
         {bankAccount && (
           <View style={styles.bankChip}>
             <View style={styles.bankIconWrap}>
-              <Ionicons name="business-outline" size={18} color="#378BBB" />
+              <Ionicons name="business-outline" size={18} color="#06B6D4" />
             </View>
             <View style={styles.bankInfo}>
               <Text style={styles.bankLabel}>Payouts sent to</Text>
@@ -350,7 +355,7 @@ const HostPayoutsScreen = () => {
         {/* ── Settlement list ── */}
         {filtered.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Ionicons name="receipt-outline" size={48} color="#1B3A52" />
+            <Ionicons name="receipt-outline" size={48} color="rgba(255,255,255,0.35)" />
             <Text style={styles.emptyTitle}>
               {filter === 'all' ? 'No settlements yet' : `No ${filter} settlements`}
             </Text>
@@ -365,84 +370,220 @@ const HostPayoutsScreen = () => {
         )}
       </ScrollView>
     </View>
+    </ImageBackground>
   );
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0E1621' },
-  center:    { flex: 1, backgroundColor: '#0E1621', justifyContent: 'center', alignItems: 'center' },
-  scroll:    { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 48 },
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: '#0E1621' },
+//   center:    { flex: 1, backgroundColor: '#0E1621', justifyContent: 'center', alignItems: 'center' },
+//   scroll:    { flex: 1 },
+//   scrollContent: { padding: 16, paddingBottom: 48 },
 
-  // Header
+//   // Header
+//   header: {
+//     paddingHorizontal: 20, paddingVertical: 16,
+//     borderBottomWidth: 1, borderBottomColor: 'rgba(55,139,187,0.08)',
+//   },
+//   headerTitle: { fontSize: 26, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
+
+//   // Summary — main total card
+//   summaryMain: {
+//     backgroundColor: '#16283D',
+//     borderRadius: 16, padding: 20, marginBottom: 10,
+//     borderWidth: 1, borderColor: 'rgba(55,139,187,0.2)',
+//   },
+//   summaryMainLabel: {
+//     fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#7F93AA',
+//     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
+//   },
+//   summaryMainValue: { fontSize: 32, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
+
+//   // Summary — sub row (pending + count)
+//   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+//   summarySub: {
+//     flex: 1, backgroundColor: '#132232',
+//     borderRadius: 14, padding: 16,
+//     borderWidth: 1, borderColor: 'rgba(55,139,187,0.12)',
+//   },
+//   summarySubLabel: {
+//     fontSize: 11, fontFamily: 'Inter-SemiBold', color: '#506A85',
+//     textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6,
+//   },
+//   summarySubValue: { fontSize: 18, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
+//   summaryPending:  { color: '#FF9F0A' },
+
+//   // Payout destination chip
+//   bankChip: {
+//     flexDirection: 'row', alignItems: 'center', gap: 12,
+//     backgroundColor: '#132232', borderRadius: 14, padding: 14, marginBottom: 22,
+//     borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+//   },
+//   bankIconWrap: {
+//     width: 38, height: 38, borderRadius: 10,
+//     backgroundColor: 'rgba(55,139,187,0.1)',
+//     alignItems: 'center', justifyContent: 'center',
+//     flexShrink: 0,
+//   },
+//   bankInfo:  {},
+//   bankLabel: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85', marginBottom: 3 },
+//   bankName:  { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+
+//   // Section title
+//   sectionTitle: { fontSize: 17, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 12 },
+
+//   // Filter chips
+//   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+//   filterChip: {
+//     paddingHorizontal: 16, paddingVertical: 7,
+//     borderRadius: 20, borderWidth: 1,
+//     borderColor: 'rgba(55,139,187,0.2)',
+//   },
+//   filterChipOn:  { backgroundColor: '#378BBB', borderColor: '#378BBB' },
+//   filterText:    { fontSize: 13, fontFamily: 'Inter-Regular', color: '#7F93AA' },
+//   filterTextOn:  { color: '#FFFFFF', fontFamily: 'Inter-SemiBold' },
+
+//   // Empty state
+//   emptyBox:   { alignItems: 'center', paddingVertical: 48 },
+//   emptyTitle: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#B8C7D9', marginTop: 16, marginBottom: 8 },
+//   emptySub:   { fontSize: 13, fontFamily: 'Inter-Regular', color: '#506A85', textAlign: 'center', lineHeight: 20, paddingHorizontal: 20 },
+// });
+
+const styles = StyleSheet.create({
+  background: { flex: 1 },
+  overlay: { flex: 1, backgroundColor: 'rgba(13, 11, 30, 0.60)' },
+  container: { flex: 1 },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 16 },
+
   header: {
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(55,139,187,0.08)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
   },
   headerTitle: { fontSize: 26, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
 
-  // Summary — main total card
   summaryMain: {
-    backgroundColor: '#16283D',
-    borderRadius: 16, padding: 20, marginBottom: 10,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.2)',
+    backgroundColor: 'rgba(26, 21, 48, 0.88)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.30)',
   },
   summaryMainLabel: {
-    fontSize: 12, fontFamily: 'Inter-SemiBold', color: '#7F93AA',
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
   },
   summaryMainValue: { fontSize: 32, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
 
-  // Summary — sub row (pending + count)
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summarySub: {
-    flex: 1, backgroundColor: '#132232',
-    borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.12)',
+    flex: 1,
+    backgroundColor: 'rgba(26, 21, 48, 0.78)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.22)',
   },
   summarySubLabel: {
-    fontSize: 11, fontFamily: 'Inter-SemiBold', color: '#506A85',
-    textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6,
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginBottom: 6,
   },
   summarySubValue: { fontSize: 18, fontFamily: 'Inter-Bold', color: '#FFFFFF' },
-  summaryPending:  { color: '#FF9F0A' },
+  summaryPending: { color: '#FF9F0A' },
 
-  // Payout destination chip
   bankChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#132232', borderRadius: 14, padding: 14, marginBottom: 22,
-    borderWidth: 1, borderColor: 'rgba(55,139,187,0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(26, 21, 48, 0.78)',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   bankIconWrap: {
-    width: 38, height: 38, borderRadius: 10,
-    backgroundColor: 'rgba(55,139,187,0.1)',
-    alignItems: 'center', justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(6,182,212,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
-  bankInfo:  {},
-  bankLabel: { fontSize: 11, fontFamily: 'Inter-Regular', color: '#506A85', marginBottom: 3 },
-  bankName:  { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
+  bankInfo: {},
+  bankLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 3,
+  },
+  bankName: { fontSize: 14, fontFamily: 'Inter-SemiBold', color: '#FFFFFF' },
 
-  // Section title
-  sectionTitle: { fontSize: 17, fontFamily: 'Inter-Bold', color: '#FFFFFF', marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter-Bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
 
-  // Filter chips
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   filterChip: {
-    paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.30)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  filterChipOn:  { backgroundColor: '#378BBB', borderColor: '#378BBB' },
-  filterText:    { fontSize: 13, fontFamily: 'Inter-Regular', color: '#7F93AA' },
-  filterTextOn:  { color: '#FFFFFF', fontFamily: 'Inter-SemiBold' },
+  filterChipOn: {
+    backgroundColor: 'rgba(139,92,246,0.35)',
+    borderColor: '#8B2BE2',
+  },
+  filterText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+  },
+  filterTextOn: { color: '#FFFFFF', fontFamily: 'Inter-SemiBold' },
 
-  // Empty state
-  emptyBox:   { alignItems: 'center', paddingVertical: 48 },
-  emptyTitle: { fontSize: 17, fontFamily: 'Inter-SemiBold', color: '#B8C7D9', marginTop: 16, marginBottom: 8 },
-  emptySub:   { fontSize: 13, fontFamily: 'Inter-Regular', color: '#506A85', textAlign: 'center', lineHeight: 20, paddingHorizontal: 20 },
+  emptyBox: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    backgroundColor: 'rgba(26, 21, 48, 0.65)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.20)',
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySub: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
 });
 
 export default HostPayoutsScreen;
