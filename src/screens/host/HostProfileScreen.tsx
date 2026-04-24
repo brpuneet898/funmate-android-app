@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -20,6 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import Toast from 'react-native-toast-message';
 import { useAlert } from '../../contexts/AlertContext';
+import LinearGradient from 'react-native-linear-gradient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -193,9 +195,9 @@ const InfoRow = React.memo(({ icon, text, onPress }: {
     disabled={!onPress}
     activeOpacity={onPress ? 0.7 : 1}
   >
-    <Ionicons name={icon} size={16} color="#506A85" style={{ marginTop: 2 }} />
+    <Ionicons name={icon} size={16} color="rgba(255,255,255,0.55)" style={{ marginTop: 2 }} />
     <Text style={[infoStyles.text, onPress && infoStyles.link]} numberOfLines={3}>{text}</Text>
-    {onPress ? <Ionicons name="open-outline" size={13} color="#378BBB" /> : null}
+    {onPress ? <Ionicons name="open-outline" size={13} color="#06B6D4" /> : null}
   </TouchableOpacity>
 ));
 
@@ -210,11 +212,11 @@ const infoStyles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#C8D8E8',
+    color: 'rgba(255,255,255,0.82)',
     lineHeight: 20,
   },
   link: {
-    color: '#378BBB',
+    color: '#22D3EE',
     textDecorationLine: 'underline',
   },
 });
@@ -322,10 +324,19 @@ const HostProfileScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
-        <ActivityIndicator size="large" color="#378BBB" />
-      </View>
+      <ImageBackground
+        source={require('../../assets/images/bg_party.webp')}
+        style={styles.container}
+        resizeMode="cover"
+        blurRadius={8}
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#8B2BE2" />
+          </View>
+        </View>
+      </ImageBackground>
     );
   }
 
@@ -340,18 +351,24 @@ const HostProfileScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0E1621" />
+      <ImageBackground
+        source={require('../../assets/images/bg_party.webp')}
+        style={styles.container}
+        resizeMode="cover"
+        blurRadius={8}
+      >
+        <View style={styles.overlay}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: Math.max(32, insets.bottom + 24) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#378BBB"
-            colors={['#378BBB']}
+            tintColor="#8B2BE2"
+            colors={['#8B2BE2', '#06B6D4']}
           />
         }
       >
@@ -503,23 +520,31 @@ const HostProfileScreen = () => {
             onPress={() => navigation.navigate('EditHostProfile')}
             activeOpacity={0.8}
           >
-            <Ionicons name="create-outline" size={18} color="#378BBB" />
+            <Ionicons name="create-outline" size={18} color="#06B6D4" />
             <Text style={styles.btnSecondaryText}>Edit Profile</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.btnPrimary, { flex: 1 }]}
+            style={{ flex: 1 }}
             onPress={() => navigation.navigate('HostBankAccount')}
             activeOpacity={0.8}
           >
-            <Ionicons name="card-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.btnPrimaryText}>Bank Account</Text>
+            <LinearGradient
+              colors={['#8B2BE2', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.btnPrimary}
+            >
+              <Ionicons name="card-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.btnPrimaryText}>Bank Account</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: insets.bottom + 24 }} />
+        <View style={{ height: 8 }} />
       </ScrollView>
     </View>
+    </ImageBackground>
   );
 };
 
@@ -527,17 +552,20 @@ const styles = StyleSheet.create({
   // ── Layout ──
   container: {
     flex: 1,
-    backgroundColor: '#0E1621',
+    backgroundColor: '#0D0B1E',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 11, 30, 0.60)',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0E1621',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 0,
   },
   titleRow: {
     flexDirection: 'row',
@@ -551,7 +579,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   logoutIconBtn: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   // ── Avatar section ──
   avatarSection: {
@@ -563,7 +595,7 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 44,
     borderWidth: 2,
-    borderColor: 'rgba(55,139,187,0.4)',
+    borderColor: 'rgba(139,92,246,0.55)',
     marginBottom: 14,
   },
   initialsCircle: {
@@ -593,21 +625,21 @@ const styles = StyleSheet.create({
   subtitleText: {
     fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
   },
   // ── Cards ──
   card: {
-    backgroundColor: '#16283D',
-    borderRadius: 14,
+    backgroundColor: 'rgba(26, 21, 48, 0.78)',
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(55,139,187,0.15)',
+    borderColor: 'rgba(139,92,246,0.25)',
   },
   sectionLabel: {
     fontSize: 11,
     fontFamily: 'Inter-SemiBold',
-    color: '#506A85',
+    color: 'rgba(255,255,255,0.55)',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 12,
@@ -622,7 +654,7 @@ const styles = StyleSheet.create({
   bioText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#C8D8E8',
+    color: 'rgba(255,255,255,0.82)',
     lineHeight: 22,
     marginBottom: 8,
   },
@@ -638,7 +670,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 20,
     borderWidth: 1,
   },
@@ -657,9 +689,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#378BBB',
-    borderRadius: 12,
+    borderRadius: 30,
     paddingVertical: 14,
+    minHeight: 54,
   },
   btnPrimaryText: {
     fontSize: 15,
@@ -672,15 +704,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: 'transparent',
-    borderRadius: 12,
+    borderRadius: 30,
     paddingVertical: 14,
+    minHeight: 54,
     borderWidth: 1.5,
-    borderColor: '#378BBB',
+    borderColor: 'rgba(6,182,212,0.65)',
   },
   btnSecondaryText: {
     fontSize: 15,
     fontFamily: 'Inter-SemiBold',
-    color: '#378BBB',
+    color: '#06B6D4',
   },
 
 });
