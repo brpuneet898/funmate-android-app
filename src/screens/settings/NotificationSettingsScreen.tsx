@@ -137,6 +137,7 @@ const NotificationSettingsScreen: React.FC<NotificationSettingsScreenProps> = ({
       source={require('../../assets/images/bg_party.webp')}
       style={styles.container}
       resizeMode="cover"
+      blurRadius={10}
     >
       <View style={styles.overlay}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
