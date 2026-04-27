@@ -75,6 +75,8 @@ const BASE_URL = getBaseURL();
 export const API_ENDPOINTS = {
   // Face detection & liveness
   DETECT_FACE: `${BASE_URL}/detect-face`,
+  CHECK_NSFW: `${BASE_URL}/check-nsfw`,
+  CHECK_SAME_PERSON: `${BASE_URL}/check-same-person`,
   CREATE_TEMPLATE: `${BASE_URL}/create-template`,
   VERIFY_LIVENESS: `${BASE_URL}/verify-liveness`,
   

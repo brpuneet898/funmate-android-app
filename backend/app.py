@@ -23,12 +23,26 @@ face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
 face_app.prepare(ctx_id=-1, det_size=(640, 640))
 print("Face detector loaded ✅")
 
-# Initialize NSFW + violence classifiers once at startup
-print("Loading NSFW / violence detection models...")
+# HuggingFace classifiers — loaded lazily on first use to avoid build/startup OOM
 _hf_device = 0 if torch.cuda.is_available() else -1
-nsfw_clf = pipeline("image-classification", model="Falconsai/nsfw_image_detection", device=_hf_device)
-violence_clf = pipeline("image-classification", model="jaranohaal/vit-base-violence-detection", device=_hf_device)
-print("NSFW / violence models loaded ✅")
+_nsfw_clf = None
+_violence_clf = None
+
+def get_nsfw_clf():
+    global _nsfw_clf
+    if _nsfw_clf is None:
+        print("Loading NSFW detection model...")
+        _nsfw_clf = pipeline("image-classification", model="Falconsai/nsfw_image_detection", device=_hf_device)
+        print("NSFW model loaded ✅")
+    return _nsfw_clf
+
+def get_violence_clf():
+    global _violence_clf
+    if _violence_clf is None:
+        print("Loading violence detection model...")
+        _violence_clf = pipeline("image-classification", model="jaranohaal/vit-base-violence-detection", device=_hf_device)
+        print("Violence model loaded ✅")
+    return _violence_clf
 
 def pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
     """Convert PIL Image to OpenCV BGR format"""
@@ -341,8 +355,8 @@ def check_nsfw():
         file = request.files['image']
         pil_img = Image.open(io.BytesIO(file.read())).convert("RGB")
 
-        nsfw_preds     = nsfw_clf(pil_img)
-        violence_preds = violence_clf(pil_img)
+        nsfw_preds     = get_nsfw_clf()(pil_img)
+        violence_preds = get_violence_clf()(pil_img)
 
         # Top prediction for each model
         nsfw_preds     = sorted(nsfw_preds,     key=lambda x: x['score'], reverse=True)
