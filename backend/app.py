@@ -1,6 +1,6 @@
 """
 Face Detection & Liveness Verification API Backend
-Based on InsightFace buffalo_l model
+Based on InsightFace buffalo_l model + HuggingFace NSFW/Violence models
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -11,6 +11,8 @@ from PIL import Image
 from insightface.app import FaceAnalysis
 import base64
 import requests
+import torch
+from transformers import pipeline
 
 app = Flask(__name__)
 CORS(app)  # Allow React Native to call the API
@@ -20,6 +22,13 @@ print("Loading face detection model...")
 face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
 face_app.prepare(ctx_id=-1, det_size=(640, 640))
 print("Face detector loaded ✅")
+
+# Initialize NSFW + violence classifiers once at startup
+print("Loading NSFW / violence detection models...")
+_hf_device = 0 if torch.cuda.is_available() else -1
+nsfw_clf = pipeline("image-classification", model="Falconsai/nsfw_image_detection", device=_hf_device)
+violence_clf = pipeline("image-classification", model="jaranohaal/vit-base-violence-detection", device=_hf_device)
+print("NSFW / violence models loaded ✅")
 
 def pil_to_bgr(pil_img: Image.Image) -> np.ndarray:
     """Convert PIL Image to OpenCV BGR format"""
@@ -308,16 +317,163 @@ def verify_liveness():
             'message': str(e)
         }), 500
 
+# ═══════════════════════════════════════════════════════════════════
+# 🔞 NSFW + VIOLENCE CHECK ENDPOINT
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/check-nsfw', methods=['POST'])
+def check_nsfw():
+    """
+    Check a single image for NSFW or violent content.
+
+    Request: multipart/form-data with 'image' file
+    Response: {
+        decision: "ACCEPTED" | "REJECTED",
+        reason: string,
+        nsfw:     { label, score },
+        violence: { label, score }
+    }
+    """
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image provided'}), 400
+
+        file = request.files['image']
+        pil_img = Image.open(io.BytesIO(file.read())).convert("RGB")
+
+        nsfw_preds     = nsfw_clf(pil_img)
+        violence_preds = violence_clf(pil_img)
+
+        # Top prediction for each model
+        nsfw_preds     = sorted(nsfw_preds,     key=lambda x: x['score'], reverse=True)
+        violence_preds = sorted(violence_preds, key=lambda x: x['score'], reverse=True)
+        nsfw_label,     nsfw_score     = nsfw_preds[0]['label'],     float(nsfw_preds[0]['score'])
+        violence_label, violence_score = violence_preds[0]['label'], float(violence_preds[0]['score'])
+
+        NSFW_THRESH     = 0.50
+        VIOLENCE_THRESH = 0.50
+
+        nsfw_label_l     = nsfw_label.strip().lower()
+        violence_label_l = violence_label.strip().lower()
+
+        nsfw_reject     = (nsfw_label_l == 'nsfw') and (nsfw_score >= NSFW_THRESH)
+        violence_reject = (('violent' in violence_label_l or 'violence' in violence_label_l)
+                           and 'non' not in violence_label_l
+                           and violence_score >= VIOLENCE_THRESH)
+
+        if nsfw_reject:
+            reason = 'Photo contains explicit or inappropriate content.'
+        elif violence_reject:
+            reason = 'Photo contains violent content.'
+        else:
+            reason = 'Photo passed content check.'
+
+        decision = 'REJECTED' if (nsfw_reject or violence_reject) else 'ACCEPTED'
+
+        print(f"NSFW check: {decision} | nsfw={nsfw_label}({nsfw_score:.3f}) | violence={violence_label}({violence_score:.3f})")
+
+        return jsonify({
+            'decision': decision,
+            'reason':   reason,
+            'nsfw':     {'label': nsfw_label,     'score': nsfw_score},
+            'violence': {'label': violence_label, 'score': violence_score},
+        }), 200
+
+    except Exception as e:
+        print(f"Error in NSFW check: {str(e)}")
+        return jsonify({'error': 'NSFW check failed', 'message': str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 👤 SAME-PERSON CONSISTENCY CHECK ENDPOINT
+# ═══════════════════════════════════════════════════════════════════
+
+@app.route('/check-same-person', methods=['POST'])
+def check_same_person():
+    """
+    Verify that all uploaded photos are of the same person.
+
+    Request: multipart/form-data with multiple 'images' files (4–6 photos)
+    Response: {
+        decision:        "ACCEPTED" | "REJECTED",
+        reason:          string,
+        outlier_indices: [0-based indices of inconsistent photos],
+        similarities:    [mean similarity of each photo to the rest]
+    }
+    """
+    SAME_PERSON_THRESHOLD = 0.45  # mirrors ENROLL_SAME_PERSON_THRESHOLD in notebook
+
+    try:
+        files = request.files.getlist('images')
+        if len(files) < 2:
+            return jsonify({'error': 'At least 2 images required'}), 400
+
+        embeddings  = []
+        failed_idxs = []
+
+        for idx, f in enumerate(files):
+            pil_img = Image.open(io.BytesIO(f.read()))
+            bgr     = pil_to_bgr(pil_img)
+            emb, _, score = get_embedding_from_bgr(bgr, det_thresh=0.60)
+            if emb is None:
+                failed_idxs.append(idx)
+                continue
+            embeddings.append((idx, l2_normalize(emb)))
+
+        if failed_idxs:
+            return jsonify({
+                'decision':        'REJECTED',
+                'reason':          f'No face detected in photo(s) at position(s): {[i+1 for i in failed_idxs]}.',
+                'outlier_indices': failed_idxs,
+                'similarities':    [],
+            }), 200
+
+        n = len(embeddings)
+        emb_vecs = np.stack([e for _, e in embeddings], axis=0)
+
+        # Pairwise cosine similarity matrix
+        mean_sims = []
+        for i in range(n):
+            sims_to_others = [cosine_sim(emb_vecs[i], emb_vecs[j]) for j in range(n) if j != i]
+            mean_sims.append(float(np.mean(sims_to_others)))
+
+        outlier_local_indices = [i for i, s in enumerate(mean_sims) if s < SAME_PERSON_THRESHOLD]
+        # Map back to original file indices
+        outlier_orig_indices  = [embeddings[i][0] for i in outlier_local_indices]
+
+        decision = 'REJECTED' if outlier_orig_indices else 'ACCEPTED'
+        if outlier_orig_indices:
+            reason = (f'Photo(s) at position(s) {[i+1 for i in outlier_orig_indices]} '
+                      f'do not appear to be of the same person as the others.')
+        else:
+            reason = 'All photos are of the same person.'
+
+        print(f"Same-person check: {decision} | mean_sims={[round(s,3) for s in mean_sims]}")
+
+        return jsonify({
+            'decision':        decision,
+            'reason':          reason,
+            'outlier_indices': outlier_orig_indices,
+            'similarities':    mean_sims,
+        }), 200
+
+    except Exception as e:
+        print(f"Error in same-person check: {str(e)}")
+        return jsonify({'error': 'Same-person check failed', 'message': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("Face Detection & Liveness Verification API Server")
     print("="*60)
     print("Server starting on http://localhost:5000")
     print("\nEndpoints:")
-    print("  - GET  /health             - Health check")
-    print("  - POST /detect-face        - Detect faces in photo")
-    print("  - POST /create-template    - Create template from photos")
-    print("  - POST /verify-liveness    - Verify live selfie")
+    print("  - GET  /health               - Health check")
+    print("  - POST /detect-face          - Detect faces in photo")
+    print("  - POST /check-nsfw           - NSFW + violence check")
+    print("  - POST /check-same-person    - Verify all photos are same person")
+    print("  - POST /create-template      - Create template from photos")
+    print("  - POST /verify-liveness      - Verify live selfie")
     print("="*60 + "\n")
     
     app.run(host='0.0.0.0', port=5000, debug=True)
