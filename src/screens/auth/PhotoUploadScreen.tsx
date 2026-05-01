@@ -320,17 +320,14 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
       }> = [];
 
       // ═══════════════════════════════════════════════════════════════════
-      // 🤖 STEP 1: VALIDATE ALL PHOTOS WITH ML MODEL FIRST
+      // 🤖 STAGE 1: FACE DETECTION — each photo must contain a real human face
       // ═══════════════════════════════════════════════════════════════════
-      console.log('🤖 Step 1: Validating all photos with ML model...');
+      console.log('🤖 Stage 1: Face detection...');
       for (const photo of uploadedPhotos) {
         if (!photo.localUri || !photo.asset) continue;
 
-        console.log(`🤖 Checking photo ${photo.order} with ML model...`);
         const mlResult = await checkPhotoWithMLModel(photo.localUri);
-        
         if (!mlResult.isApproved) {
-          // Photo rejected by ML model - STOP EVERYTHING
           Toast.show({
             type: 'error',
             text1: 'Photo Rejected',
@@ -338,18 +335,126 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
             visibilityTime: 5000,
           });
           setUploading(false);
-          return; // Exit before uploading anything
+          return;
         }
-        
-        console.log(`✅ Photo ${photo.order} approved by ML model (confidence: ${mlResult.confidenceScore})`);
+        console.log(`✅ Stage 1 passed — photo ${photo.order} (confidence: ${mlResult.confidenceScore})`);
       }
-      console.log('✅ All photos passed ML validation!');
+      console.log('✅ Stage 1 complete — all photos have a human face');
       // ═══════════════════════════════════════════════════════════════════
 
       // ═══════════════════════════════════════════════════════════════════
-      // 📤 STEP 2: UPLOAD ALL PHOTOS TO STORAGE
+      // 🔞 STAGE 2: NSFW + VIOLENCE CHECK — reject inappropriate content
       // ═══════════════════════════════════════════════════════════════════
-      console.log('📤 Step 2: Uploading all photos to Storage...');
+      console.log('🔞 Stage 2: NSFW / violence check...');
+      for (const photo of uploadedPhotos) {
+        if (!photo.localUri || !photo.asset) continue;
+
+        try {
+          const formData = new FormData();
+          formData.append('image', {
+            uri: photo.localUri,
+            type: 'image/jpeg',
+            name: 'photo.jpg',
+          } as any);
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const response = await fetch(API_ENDPOINTS.CHECK_NSFW, {
+            method: 'POST',
+            body: formData as any,
+            headers: { 'Content-Type': 'multipart/form-data' },
+            signal: controller.signal as any,
+          });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) throw new Error(`NSFW API returned ${response.status}`);
+
+          const result = await response.json() as any;
+          console.log(`🔞 Stage 2 — photo ${photo.order}: ${result.decision}`);
+
+          if (result.decision === 'REJECTED') {
+            Toast.show({
+              type: 'error',
+              text1: 'Photo Rejected',
+              text2: `Photo ${photo.order}: ${result.reason}`,
+              visibilityTime: 5000,
+            });
+            setUploading(false);
+            return;
+          }
+        } catch (nsfwError: any) {
+          console.error(`❌ NSFW check error for photo ${photo.order}:`, nsfwError);
+          Toast.show({
+            type: 'error',
+            text1: 'Content Check Failed',
+            text2: `Could not verify photo ${photo.order}. Please try again.`,
+            visibilityTime: 4000,
+          });
+          setUploading(false);
+          return;
+        }
+      }
+      console.log('✅ Stage 2 complete — no NSFW or violent content detected');
+      // ═══════════════════════════════════════════════════════════════════
+
+      // ═══════════════════════════════════════════════════════════════════
+      // 👤 STAGE 3: SAME-PERSON CHECK — all photos must be of the same person
+      // ═══════════════════════════════════════════════════════════════════
+      console.log('👤 Stage 3: Same-person consistency check...');
+      try {
+        const samePersonForm = new FormData();
+        for (const photo of uploadedPhotos) {
+          if (!photo.localUri || !photo.asset) continue;
+          samePersonForm.append('images', {
+            uri: photo.localUri,
+            type: 'image/jpeg',
+            name: `photo_${photo.order}.jpg`,
+          } as any);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const samePersonResp = await fetch(API_ENDPOINTS.CHECK_SAME_PERSON, {
+          method: 'POST',
+          body: samePersonForm as any,
+          headers: { 'Content-Type': 'multipart/form-data' },
+          signal: controller.signal as any,
+        });
+        clearTimeout(timeoutId);
+
+        if (!samePersonResp.ok) throw new Error(`Same-person API returned ${samePersonResp.status}`);
+
+        const samePersonResult = await samePersonResp.json() as any;
+        console.log(`👤 Stage 3: ${samePersonResult.decision}`);
+
+        if (samePersonResult.decision === 'REJECTED') {
+          Toast.show({
+            type: 'error',
+            text1: 'Photos Must Be of You',
+            text2: samePersonResult.reason || 'Please upload photos of the same person.',
+            visibilityTime: 6000,
+          });
+          setUploading(false);
+          return;
+        }
+      } catch (samePersonError: any) {
+        console.error('❌ Same-person check error:', samePersonError);
+        Toast.show({
+          type: 'error',
+          text1: 'Identity Check Failed',
+          text2: 'Could not verify photos are of the same person. Please try again.',
+          visibilityTime: 4000,
+        });
+        setUploading(false);
+        return;
+      }
+      console.log('✅ Stage 3 complete — all photos are of the same person');
+      // ═══════════════════════════════════════════════════════════════════
+
+      // ═══════════════════════════════════════════════════════════════════
+      // 📤 STAGE 4: UPLOAD ALL PHOTOS TO FIREBASE STORAGE
+      // ═══════════════════════════════════════════════════════════════════
+      console.log('📤 Stage 4: Uploading all photos to Storage...');
       for (const photo of uploadedPhotos) {
         if (!photo.localUri || !photo.asset) continue;
 
@@ -365,25 +470,18 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
         }
 
         console.log(`📤 Uploading photo ${photo.order} to ${storagePath}`);
-        console.log(`📁 Local URI: ${uploadUri}`);
 
         try {
-          // Upload file to Firebase Storage
-          const uploadTask = reference.putFile(uploadUri);
-          
-          // Wait for upload to complete
-          await uploadTask;
-          
+          await reference.putFile(uploadUri);
           console.log(`✅ Upload complete for photo ${photo.order}`);
-          
-          // Get download URL
+
           const downloadUrl = await reference.getDownloadURL();
           console.log(`🔗 Download URL obtained: ${downloadUrl.substring(0, 50)}...`);
 
           photoUrls.push({
             url: downloadUrl,
-            isPrimary: photo.order === 1, // First photo is primary
-            moderationStatus: 'approved', // ML model approved
+            isPrimary: photo.order === 1,
+            moderationStatus: 'approved',
             uploadedAt: new Date().toISOString(),
             order: photo.order,
           });
@@ -394,38 +492,31 @@ const PhotoUploadScreen = ({ navigation, route }: PhotoUploadScreenProps) => {
       }
 
       // ═══════════════════════════════════════════════════════════════════
-      // 🧠 STEP 3: CREATE FACE TEMPLATE FOR LIVENESS VERIFICATION
+      // 🧠 STAGE 5: CREATE FACE TEMPLATE FOR LIVENESS VERIFICATION
       // ═══════════════════════════════════════════════════════════════════
-      console.log('🧠 Step 3: Creating face template for liveness verification...');
-      
+      console.log('🧠 Stage 5: Creating face template for liveness verification...');
+
       try {
         const templateResponse = await fetch(API_ENDPOINTS.CREATE_TEMPLATE, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            photo_urls: photoUrls.map(p => p.url),
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photo_urls: photoUrls.map(p => p.url) }),
         });
-        
-        if (!templateResponse.ok) {
-          throw new Error('Failed to create face template');
-        }
-        
+
+        if (!templateResponse.ok) throw new Error('Failed to create face template');
+
         const templateResult = await templateResponse.json() as any;
         console.log('✅ Face template created:', templateResult.photos_processed, 'photos processed');
-        
-        // Update user document with photos AND template
+
         await firestore().collection('users').doc(userId).update({
           photos: photoUrls,
-          faceTemplate: templateResult.template, // Base64 template for liveness verification
+          faceTemplate: templateResult.template,
           templateCreatedAt: new Date().toISOString(),
         });
-        
+
       } catch (templateError: any) {
         console.error('⚠️ Template creation failed:', templateError);
-        // Still save photos, but without template
+        // Still save photos, but without template — liveness will fail gracefully later
         await firestore().collection('users').doc(userId).update({
           photos: photoUrls,
         });

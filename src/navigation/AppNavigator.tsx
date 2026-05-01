@@ -50,6 +50,7 @@ import ChatScreen from '../screens/main/ChatScreen';
 import EventDetailScreen from '../screens/main/EventDetailScreen';
 import { BlockedUsersScreen } from '../screens/settings/BlockedUsersScreen';
 import NotificationSettingsScreen from '../screens/settings/NotificationSettingsScreen';
+import BannedScreen from '../screens/auth/BannedScreen';
 import { SignupStep } from '../types/database';
 
 export type RootStackParamList = {
@@ -119,6 +120,7 @@ export type RootStackParamList = {
   };
   BlockedUsers: undefined;
   NotificationSettings: undefined;
+  Banned: { banMessage: string };
   // Explorer Event Hub
   EventDetail: { eventId: string };
   // Host profile screens
@@ -243,6 +245,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>, {}>(
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Login');
+  const [banMessage, setBanMessage] = useState<string>('');
 
   // Handle user state changes and check signup progress
   useEffect(() => {
@@ -259,6 +262,15 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>, {}>(
 
           if (accountDoc.exists()) {
             const accountData = accountDoc.data();
+
+            // Check if user is banned before anything else
+            if (accountData?.is_banned === true) {
+              setBanMessage(accountData?.ban_message || 'Violation of community guidelines.');
+              setInitialRoute('Banned');
+              if (initializing) setInitializing(false);
+              return;
+            }
+
             const signupStep = accountData?.signupStep as SignupStep;
             
             // Check if signup is complete (any completion type)
@@ -376,6 +388,12 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>, {}>(
           name="NotificationSettings" 
           component={NotificationSettingsScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Banned"
+          component={BannedScreen}
+          initialParams={{ banMessage }}
+          options={{ headerShown: false, gestureEnabled: false }}
         />
         {/* Main app - after auth */}
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />

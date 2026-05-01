@@ -18,11 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Install CPU-only PyTorch first (avoids pulling the massive CUDA build)
+RUN pip install --no-cache-dir \
+    torch==2.4.0+cpu \
+    torchvision==0.19.0+cpu \
+    --index-url https://download.pytorch.org/whl/cpu
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy requirements and install remaining dependencies
+COPY requirements.txt .
+# torch/torchvision already installed above — skip them here to avoid re-download
+RUN pip install --no-cache-dir $(grep -v '^torch' requirements.txt | grep -v '^torchvision')
 
 # Copy application code
 COPY . .
